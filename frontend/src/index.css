@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-gray-50 text-gray-900;
+  }
+
+  body {
+    @apply font-sans text-base antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold text-gray-900;
+  }
+
+  h1 {
+    @apply text-3xl;
+  }
+
+  h2 {
+    @apply text-2xl;
+  }
+
+  h3 {
+    @apply text-xl;
+  }
+}
+
+@layer utilities {
+  /* Clean card with minimal shadow */
+  .card-clean {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100;
+  }
+
+  /* Subtle hover effect */
+  .hover-subtle {
+    @apply transition-all duration-200;
+  }
+
+  .hover-subtle:hover {
+    @apply shadow-md;
+  }
+
+  /* Touch-friendly button */
+  .btn-touch {
+    @apply min-h-[48px] px-6 py-3;
+  }
+}
+
+/* Minimal scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Clean selection */
+::selection {
+  background-color: #d4af37;
+  color: white;
+}

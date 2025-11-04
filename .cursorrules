@@ -1,0 +1,225 @@
+# METCON Workflow App - Project Intelligence
+
+**Last Updated:** 2025-10-08
+
+---
+
+## Project Overview
+
+This is a workflow management system for METCON precious metals processing (gold, silver, PGMs). The app enforces SOPs, tracks batches through stations, validates mass checks with AI-powered OCR, and provides pre-built analytics.
+
+**Key characteristics:**
+- Mobile-first (operators use tablets on shop floor)
+- Photo-centric (visual proof for every critical step)
+- Audit-driven (event sourcing, immutable logs)
+- Security-first (RBAC from day one)
+
+---
+
+## User Roles & Workflow
+
+### Three Primary Users
+1. **Operators:** Execute batches step-by-step, take scale photos, follow SOPs
+2. **Admins:** Define/update flows, manage tolerances, approve exceptions
+3. **Analysts:** View predefined reports, filter data, export CSVs
+
+### Core Workflow Pattern
+```
+Scan batch → System picks flow → Execute steps → Validate masses → Flag exceptions → Complete batch
+```
+
+---
+
+## Key Architectural Decisions
+
+### Event Sourcing for Audit Trail
+- **Never update** batch state directly
+- **Always append** events to batch.events array
+- Current state is derived from events
+- Complete history reconstruction possible
+- Immutable for compliance
+
+### Flow Versioning
+- Flows are **immutable once active**
+- Changes create new version
+- Existing batches stay on old version
+- Analytics can compare across versions
+- Prevents mid-flight SOP changes
+
+### Mass Check Pattern
+1. Display expected mass + tolerance
+2. Operator takes photo of scale
+3. AI OCR reads display
+4. System checks tolerance
+5. Green = continue, Red = require reason + approval
+6. Store photo, OCR result, decision, all timestamped
+
+### RBAC Pattern
+- Check permissions at API endpoint level
+- Filter data queries by role
+- Hide UI elements based on permissions
+- Never trust frontend for security
+
+---
+
+## Data Model Patterns
+
+### Batches
+- Current state + events array
+- Status state machine (can't skip steps)
+- Flags array for exceptions
+- References flow version (immutable)
+
+### Flows
+- Versioned and immutable
+- Stations → Steps hierarchy
+- Each step typed (instruction, checklist, mass_check, signature, photo)
+- Tolerance defined per mass_check step
+
+### Photos
+- Stored separately from DB (object storage)
+- Hash for integrity verification
+- EXIF + OCR result embedded
+- Presigned URLs for access (1h expiry)
+
+---
+
+## Security Principles
+
+1. **Authentication:** JWT tokens, short-lived (1h), httpOnly cookies
+2. **Encryption:** TLS everywhere, DB at rest, photo storage encrypted
+3. **RBAC:** Role checked on every API call
+4. **Audit:** All sensitive actions logged (who, what, when, IP)
+5. **AI Privacy:** Private endpoints only, no data retention by provider
+6. **Immutability:** Event logs and audit logs are append-only
+
+---
+
+## Performance Principles
+
+1. **Indexes:** batch_number, status, timestamps, pipeline
+2. **Pagination:** 50 items per page (WIP), 100 per page (analytics)
+3. **Caching:** Active flows cached, analytics pre-aggregated (5 min)
+4. **Streaming:** CSV exports stream large datasets
+5. **CDN:** Photos served via CDN with presigned URLs
+
+---
+
+## UI/UX Principles
+
+1. **One clear action:** Don't overwhelm operators with options
+2. **Mobile-first:** Design for tablet, works on desktop
+3. **Visual feedback:** Green/red/yellow for status, clear error messages
+4. **No dead ends:** Every error has clear resolution path
+5. **Progressive disclosure:** Show only what's needed for current step
+
+---
+
+## Analytics Philosophy
+
+- **Pre-made reports:** Not a custom query builder
+- **Standard filters:** User, metal, station, date range
+- **Fast queries:** Pre-aggregate where possible
+- **CSV export:** Always matches what's shown on screen
+- **7 Core Reports:**
+  1. Batches in Progress
+  2. Mass Checks & Variances
+  3. Exceptions & Sign-offs
+  4. Operator Performance
+  5. Station Throughput
+  6. Yield/Loss
+  7. Turnaround Time
+
+---
+
+## Development Principles
+
+1. **Security first:** RBAC and encryption from day one (not later)
+2. **Simplicity:** Use mature, well-supported libraries
+3. **Testability:** Unit tests for business logic, E2E for critical flows
+4. **Documentation:** Code comments in English, clear variable names
+5. **Audit-ready:** Event sourcing pattern makes compliance natural
+
+---
+
+## Known Constraints
+
+- **OCR accuracy:** Confidence threshold 0.85+, allow manual fallback
+- **Photo size:** 10MB max per upload
+- **Browser support:** Modern browsers only (last 2 versions)
+- **MVP scale:** 50 concurrent users, 100 active batches, 500 photos/day
+
+---
+
+## Phase Approach
+
+**Phase 0:** Align & stub (requirements gathering)
+**Phase 1:** Skeleton app (navigation, dummy data, basic API)
+**Phase 2:** Execution loop (step runner, mass check AI, analytics queries)
+**Phase 3:** Polish & safeguards (gamification, permissions, hardening)
+
+**Post-MVP:** Leaderboard, notifications, IoT scales, AI flow builder
+
+---
+
+## Codie Operating Mode
+
+- **Explicit approval required** before code generation or file creation
+- **Pre-action summary mandatory** (max 5 bullets, reference patterns)
+- **Reuse existing patterns** (search codebase first)
+- **Ask for reference** if no precedent exists
+- **Task tracking** via releases/current.yaml (add on #ID, mark done on "We are done")
+- **Memory Bank updates** after significant changes or on request
+
+---
+
+## File Structure (To Be Created in Phase 1)
+
+```
+/metcon
+  /memory-bank          (documentation, always up-to-date)
+  /releases             (task tracking)
+  /frontend             (React/Vue app)
+    /src
+      /components
+      /pages
+      /services
+  /backend              (Node/Python API)
+    /src
+      /routes
+      /models
+      /middleware
+      /services
+  /database             (migrations, seeds)
+  docker-compose.yml    (local dev stack)
+  README.md
+```
+
+---
+
+## Common Patterns to Establish (Once Development Starts)
+
+- **API response format:** `{ success: true, data: {...}, error: null }`
+- **Error handling:** Centralized error middleware
+- **Logging:** Structured logs (JSON format)
+- **Validation:** Input validation on every endpoint (Joi/Zod/Pydantic)
+- **Date format:** ISO 8601 everywhere
+- **Naming conventions:** camelCase (JS), snake_case (Python/DB)
+
+---
+
+## Notes for Codie
+
+- This file will grow as patterns emerge during development
+- Update .cursorrules when discovering project-specific conventions
+- Always read full Memory Bank at start of each session (memory resets)
+- Focus on **productContext.md** for UX decisions
+- Focus on **systemPatterns.md** for technical decisions
+- Focus on **activeContext.md** for current work
+- Focus on **progress.md** for status tracking
+
+---
+
+*This file captures project intelligence that isn't obvious from code alone. It helps Codie work more effectively after memory resets.*
+
+

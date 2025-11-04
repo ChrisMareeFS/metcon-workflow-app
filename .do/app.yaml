@@ -1,0 +1,69 @@
+name: metcon-app
+region: nyc
+services:
+  # Backend Service
+  - name: backend
+    github:
+      repo: your-username/your-repo
+      branch: main
+      deploy_on_push: true
+    source_dir: /backend
+    dockerfile_path: backend/Dockerfile
+    http_port: 3000
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /api
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: MONGODB_URI
+        scope: RUN_TIME
+        type: SECRET
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: JWT_EXPIRES_IN
+        value: 24h
+    health_check:
+      http_path: /
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 3
+      success_threshold: 1
+      failure_threshold: 3
+
+  # Frontend Service
+  - name: frontend
+    github:
+      repo: your-username/your-repo
+      branch: main
+      deploy_on_push: true
+    source_dir: /frontend
+    dockerfile_path: frontend/Dockerfile
+    http_port: 80
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /
+    build_command: npm run build
+    envs:
+      - key: VITE_API_URL
+        value: ${backend.PUBLIC_URL}
+    health_check:
+      http_path: /
+      initial_delay_seconds: 10
+      period_seconds: 10
+      timeout_seconds: 3
+      success_threshold: 1
+      failure_threshold: 3
+
+# Use MongoDB Atlas or add a managed database
+# databases:
+#   - name: mongodb
+#     engine: MONGODB
+#     version: "6"
+#     size: db-s-1vcpu-1gb
+

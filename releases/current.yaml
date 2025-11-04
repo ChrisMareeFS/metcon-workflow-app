@@ -1,0 +1,36 @@
+# Current Release - METCON Workflow App
+
+release_name: "Phase 1 - Skeleton App"
+status: in_progress
+started_at: 2025-10-08
+
+tasks:
+  - task_id: 101
+    title: Define Phase 0 defaults and specifications
+    status: done
+    started_at: 2025-10-08
+    completed_at: 2025-10-08
+    changes:
+      - Created comprehensive Phase 0 proposal with 6-station gold pipeline
+      - Defined all 7 analytics reports with filters and aggregations
+      - Specified tolerance settings and approval workflow
+      - Designed 2FA login flow with SMS/Authenticator/Email options
+      - Recommended tech stack (React + Node.js + MongoDB + AWS)
+      - Set infrastructure defaults (retention, backups, security)
+  
+  - task_id: 102
+    title: Build Phase 1 Skeleton App with 2FA Login
+    status: done
+    started_at: 2025-10-08
+    completed_at: 2025-10-08
+    changes:
+      - Created complete frontend structure with React + TypeScript + Vite
+      - Built 3 2FA screens (Login, Verify, Setup) with full functionality
+      - Set up backend API with Express + TypeScript + MongoDB
+      - Implemented JWT authentication + RBAC middleware
+      - Created MongoDB models (User, Batch, Flow, Photo)
+      - Built API routes for auth, batches, and flows
+      - Added rate limiting and security middleware
+      - Created Docker Compose for local development
+      - Added comprehensive setup guide (SETUP_GUIDE.md)
+      - Seeded default users (admin, operator1) in database init script
