@@ -265,10 +265,11 @@ async function seedDatabase() {
 
       const flow = await Flow.create({
         _id: new mongoose.Types.ObjectId(),
+        flow_id: `flow_${config.pipeline}`,
         name: config.name,
         description: `Standard ${config.pipeline} processing workflow`,
         pipeline: config.pipeline,
-        version: 1,
+        version: '1',
         status: 'active',
         stations: flowStations,
         created_by: users[0]._id,
