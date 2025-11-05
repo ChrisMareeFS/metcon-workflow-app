@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Calendar, TrendingUp, TrendingDown, Package, Clock, Percent, Settings, X } from 'lucide-react';
+import { Download, Calendar, Package, Settings, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { analyticsAPI } from '../../services/api';
 import { LineChart, Line, BarChart, Bar, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -312,14 +312,14 @@ export default function Analytics() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           </div>
         ) : (
-        <YTDSummary data={data} year={year} kpiSettings={kpiSettings} selectedPipeline={selectedPipeline} />
+        <YTDSummary data={data} kpiSettings={kpiSettings} selectedPipeline={selectedPipeline} />
       )}
     </div>
   );
 }
 
 // YTD Summary Component
-function YTDSummary({ data, year, kpiSettings, selectedPipeline }: { data: AnalyticsData; year: number; kpiSettings: KPISettings; selectedPipeline: string }) {
+function YTDSummary({ data, kpiSettings, selectedPipeline }: { data: AnalyticsData; kpiSettings: KPISettings; selectedPipeline: string }) {
   const stats = data?.ytd_stats;
 
   // Get metal symbol based on pipeline
@@ -341,7 +341,6 @@ function YTDSummary({ data, year, kpiSettings, selectedPipeline }: { data: Analy
     }
   };
 
-  const metalSymbol = getMetalSymbol();
   const metalName = getMetalName();
 
   // Prepare cumulative data for charts using actual batch data
@@ -581,7 +580,7 @@ function YTDSummary({ data, year, kpiSettings, selectedPipeline }: { data: Analy
                 <ReferenceLine y={kpiSettings.recoveryKpiUpper} stroke="#ef4444" strokeDasharray="3 3" label="KPI Upper" />
                 <ReferenceLine y={kpiSettings.recoveryKpiLower} stroke="#ef4444" strokeDasharray="3 3" label="KPI Lower" />
                 <ReferenceLine y={100} stroke="#1f2937" strokeWidth={1} label="Zero" />
-                <Line type="monotone" dataKey="recovery" stroke="#1e40af" strokeWidth={2} name="Overall Recovery" dot={{ stroke: '#1e40af', fill: '#1e40af', r: 3, strokeWidth: 2, shape: 'square' }} />
+                <Line type="monotone" dataKey="recovery" stroke="#1e40af" strokeWidth={2} name="Overall Recovery" dot={{ stroke: '#1e40af', fill: '#1e40af', r: 3, strokeWidth: 2 }} />
                 <Scatter dataKey="recovery" fill="#3b82f6" name="Discrete Recovery" shape="circle" />
               </LineChart>
             </ResponsiveContainer>

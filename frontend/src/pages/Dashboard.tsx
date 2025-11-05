@@ -1,7 +1,6 @@
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
-import Button from '../components/ui/Button';
-import { Package, GitBranch, BarChart3, Upload, TrendingUp, Clock, AlertCircle, CheckCircle, Activity, PlayCircle } from 'lucide-react';
+import { Package, GitBranch, BarChart3, Upload, TrendingUp, Clock, AlertCircle, CheckCircle, PlayCircle } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuthStore();

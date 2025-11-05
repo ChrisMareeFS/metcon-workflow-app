@@ -123,7 +123,7 @@ export default function ScanBatch() {
       await worker.setParameters({
         tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,%:-/',
         preserve_interword_spaces: '1',
-        tessedit_pageseg_mode: '3', // Fully automatic page segmentation
+        tessedit_pageseg_mode: 3, // Fully automatic page segmentation
       });
       
       // Extract text from the preprocessed image
@@ -358,7 +358,7 @@ export default function ScanBatch() {
       const numericPattern = /(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)/;
       const match = line.match(numericPattern);
       if (match) {
-        const [, col1, col2, col3, col4] = match;
+        const [, , col2, , col4] = match;
         // Columns typically: raw_weight, silver%, silver_fine, gold%, gold_fine
         if (parseFloat(col2) > 0) silverValues++;  // Silver % column
         if (parseFloat(col4) > 0) goldValues++;    // Gold % column
