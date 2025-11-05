@@ -1,8 +1,8 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import { User } from '../models/User.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { apiLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
@@ -32,7 +32,7 @@ const updateUserSchema = z.object({
  * GET /api/users
  * Get all users (admin only)
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     // Check if user is admin
     if (req.user?.role !== 'admin') {
@@ -50,12 +50,14 @@ router.get('/', async (req: Request, res: Response) => {
       success: true,
       data: { users },
     });
+    return;
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch users',
     });
+    return;
   }
 });
 
@@ -63,7 +65,7 @@ router.get('/', async (req: Request, res: Response) => {
  * GET /api/users/operators
  * Get all operators (for analytics, dropdowns, etc)
  */
-router.get('/operators', async (req: Request, res: Response) => {
+router.get('/operators', async (_req: AuthRequest, res: Response) => {
   try {
     const operators = await User.find({ role: 'operator', active: true })
       .select('username email stations created_at')
@@ -73,12 +75,14 @@ router.get('/operators', async (req: Request, res: Response) => {
       success: true,
       data: { operators },
     });
+    return;
   } catch (error) {
     console.error('Error fetching operators:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch operators',
     });
+    return;
   }
 });
 
@@ -86,7 +90,7 @@ router.get('/operators', async (req: Request, res: Response) => {
  * POST /api/users
  * Create new user (admin only)
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     // Check if user is admin
     if (req.user?.role !== 'admin') {
@@ -168,6 +172,7 @@ router.post('/', async (req: Request, res: Response) => {
         },
       },
     });
+    return;
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
@@ -182,6 +187,7 @@ router.post('/', async (req: Request, res: Response) => {
       success: false,
       error: 'Failed to create user',
     });
+    return;
   }
 });
 
@@ -189,7 +195,7 @@ router.post('/', async (req: Request, res: Response) => {
  * PATCH /api/users/:id
  * Update user (admin only)
  */
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', async (req: AuthRequest, res: Response) => {
   try {
     // Check if user is admin
     if (req.user?.role !== 'admin') {
@@ -221,6 +227,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
       success: true,
       data: { user },
     });
+    return;
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
@@ -235,6 +242,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
       success: false,
       error: 'Failed to update user',
     });
+    return;
   }
 });
 
@@ -242,7 +250,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  * DELETE /api/users/:id
  * Deactivate user (admin only) - soft delete
  */
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     // Check if user is admin
     if (req.user?.role !== 'admin') {
@@ -280,12 +288,14 @@ router.delete('/:id', async (req: Request, res: Response) => {
       success: true,
       data: { user },
     });
+    return;
   } catch (error) {
     console.error('Error deleting user:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to delete user',
     });
+    return;
   }
 });
 

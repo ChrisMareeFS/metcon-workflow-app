@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, NextFunction } from 'express';
 import { Batch } from '../models/Batch.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -608,7 +608,7 @@ router.get('/turnaround-time', async (req: AuthRequest, res, next) => {
  * GET /api/analytics/operator-performance
  * Get operator performance metrics
  */
-router.get('/operator-performance', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/operator-performance', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { date_from, date_to } = req.query;
     
