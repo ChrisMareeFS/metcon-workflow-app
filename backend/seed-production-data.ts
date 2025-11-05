@@ -181,31 +181,34 @@ async function seedDatabase() {
     console.log('✅ Creating check templates...');
     const checkTemplates = [
       {
-        check_id: 'mass_check',
+        template_id: 'mass_check',
         name: 'Mass Verification',
         type: 'mass_check',
-        description: 'Verify material mass',
-        tolerance_percent: 0.5
+        instructions: 'Verify material mass',
+        icon: '⚖️',
+        tolerance: 0.5,
+        tolerance_unit: '%'
       },
       {
-        check_id: 'visual_inspection',
+        template_id: 'visual_inspection',
         name: 'Visual Inspection',
         type: 'checklist',
-        description: 'Visual quality check',
-        items: ['No contamination', 'Proper color', 'No cracks']
+        instructions: 'Visual quality check',
+        icon: '👁️',
+        checklist_items: ['No contamination', 'Proper color', 'No cracks']
       },
       {
-        check_id: 'temperature_check',
+        template_id: 'temperature_check',
         name: 'Temperature Check',
         type: 'instruction',
-        description: 'Verify operating temperature'
+        instructions: 'Verify operating temperature',
+        icon: '🌡️'
       }
     ];
 
     for (const template of checkTemplates) {
       await CheckTemplate.create({
         ...template,
-        active: true,
         created_by: adminUser._id
       });
     }
