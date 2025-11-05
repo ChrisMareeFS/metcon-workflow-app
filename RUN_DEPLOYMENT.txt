@@ -1,0 +1,46 @@
+================================================================================
+METCON - DEPLOYMENT COMMANDS
+Copy and paste these commands one by one
+================================================================================
+
+STEP 1: Connect to your droplet
+--------------------------------
+ssh root@142.93.224.115
+
+(If first time, type 'yes' when prompted, then enter password)
+
+
+STEP 2: Run automated deployment script
+----------------------------------------
+curl -fsSL https://raw.githubusercontent.com/ChrisMareeFS/metcon-workflow-app/main/deploy-all.sh | bash
+
+
+STEP 3: When script pauses, edit MongoDB connection
+----------------------------------------------------
+nano .env
+
+Find this line:
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/metcon?retryWrites=true&w=majority
+
+Replace with your actual MongoDB Atlas connection string
+
+Save: Ctrl+X, then Y, then Enter
+
+
+STEP 4: Continue script
+-------------------------
+Press Enter to continue
+
+
+STEP 5: Test your app
+----------------------
+Open browser: http://142.93.224.115
+
+Login:
+  Username: admin
+  Password: admin123
+
+================================================================================
+IMPORTANT: Change default password immediately after first login!
+================================================================================
+

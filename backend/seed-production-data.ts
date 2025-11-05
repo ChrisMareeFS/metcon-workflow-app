@@ -50,58 +50,26 @@ async function seedDatabase() {
     const hashedPassword = await bcrypt.hash('Password123!', 10);
 
     const users: IUserDoc[] = [
-      // Operators
-      {
-        _id: new mongoose.Types.ObjectId(),
-        username: 'operator1',
-        email: 'operator1@metcon.com',
-        role: 'operator',
-        stations: ['receiving', 'melting', 'refining']
-      },
-      {
-        _id: new mongoose.Types.ObjectId(),
-        username: 'operator2',
-        email: 'operator2@metcon.com',
-        role: 'operator',
-        stations: ['melting', 'refining', 'casting']
-      },
-      {
-        _id: new mongoose.Types.ObjectId(),
-        username: 'operator3',
-        email: 'operator3@metcon.com',
-        role: 'operator',
-        stations: ['refining', 'casting', 'quality']
-      },
-      {
-        _id: new mongoose.Types.ObjectId(),
-        username: 'operator4',
-        email: 'operator4@metcon.com',
-        role: 'operator',
-        stations: ['receiving', 'melting']
-      },
+      // Operators (14 total for rich analytics)
+      { _id: new mongoose.Types.ObjectId(), username: 'operator1', email: 'operator1@metcon.com', role: 'operator', stations: ['receiving', 'melting', 'refining'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator2', email: 'operator2@metcon.com', role: 'operator', stations: ['melting', 'refining', 'casting'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator3', email: 'operator3@metcon.com', role: 'operator', stations: ['refining', 'casting', 'quality'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator4', email: 'operator4@metcon.com', role: 'operator', stations: ['receiving', 'melting'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator5', email: 'operator5@metcon.com', role: 'operator', stations: ['receiving', 'shipping'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator6', email: 'operator6@metcon.com', role: 'operator', stations: ['melting', 'casting'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator7', email: 'operator7@metcon.com', role: 'operator', stations: ['quality', 'shipping'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator8', email: 'operator8@metcon.com', role: 'operator', stations: ['receiving', 'quality'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator9', email: 'operator9@metcon.com', role: 'operator', stations: ['melting', 'refining'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator10', email: 'operator10@metcon.com', role: 'operator', stations: ['casting', 'shipping'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator11', email: 'operator11@metcon.com', role: 'operator', stations: ['refining', 'quality'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator12', email: 'operator12@metcon.com', role: 'operator', stations: ['receiving', 'melting', 'casting'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator13', email: 'operator13@metcon.com', role: 'operator', stations: ['quality', 'shipping'] },
+      { _id: new mongoose.Types.ObjectId(), username: 'operator14', email: 'operator14@metcon.com', role: 'operator', stations: ['melting', 'refining', 'shipping'] },
       // Supervisors
-      {
-        _id: new mongoose.Types.ObjectId(),
-        username: 'supervisor1',
-        email: 'supervisor1@metcon.com',
-        role: 'supervisor',
-        stations: []
-      },
-      {
-        _id: new mongoose.Types.ObjectId(),
-        username: 'supervisor2',
-        email: 'supervisor2@metcon.com',
-        role: 'supervisor',
-        stations: []
-      },
+      { _id: new mongoose.Types.ObjectId(), username: 'supervisor1', email: 'supervisor1@metcon.com', role: 'supervisor', stations: [] },
+      { _id: new mongoose.Types.ObjectId(), username: 'supervisor2', email: 'supervisor2@metcon.com', role: 'supervisor', stations: [] },
       // Analyst
-      {
-        _id: new mongoose.Types.ObjectId(),
-        username: 'analyst1',
-        email: 'analyst1@metcon.com',
-        role: 'analyst',
-        stations: []
-      }
+      { _id: new mongoose.Types.ObjectId(), username: 'analyst1', email: 'analyst1@metcon.com', role: 'analyst', stations: [] }
     ];
 
     for (const userData of users) {
@@ -225,42 +193,19 @@ async function seedDatabase() {
     ];
 
     for (const config of pipelineConfigs) {
-      const flowStations = config.stations.map((stationId, index) => ({
-        station_id: new mongoose.Types.ObjectId().toString(),
+      // Create nodes from stations
+      const nodes = config.stations.map((stationId, index) => ({
+        id: `node_${config.pipeline}_${stationId}`,
+        type: 'station' as const,
         template_id: stationId,
-        name: stationTemplates.find(s => s.template_id === stationId)?.name || stationId,
-        order: index + 1,
-        steps: [
-          {
-            step_id: `${stationId}_instruction`,
-            type: 'instruction',
-            title: `${stationId.charAt(0).toUpperCase() + stationId.slice(1)} Instructions`,
-            content: `Follow standard operating procedure for ${stationId}`,
-            order: 1
-          },
-          {
-            step_id: `${stationId}_mass_check`,
-            type: 'mass_check',
-            title: 'Mass Check',
-            content: 'Weigh material and verify within tolerance',
-            tolerance_percent: 0.5,
-            order: 2
-          },
-          {
-            step_id: `${stationId}_photo`,
-            type: 'photo',
-            title: 'Photo Evidence',
-            content: 'Take photo of completed work',
-            order: 3
-          },
-          {
-            step_id: `${stationId}_signature`,
-            type: 'signature',
-            title: 'Operator Sign-off',
-            content: 'Confirm completion',
-            order: 4
-          }
-        ]
+        position: { x: 100 + (index * 200), y: 100 }
+      }));
+
+      // Create edges connecting nodes sequentially
+      const edges = nodes.slice(0, -1).map((node, index) => ({
+        id: `edge_${index}`,
+        source: node.id,
+        target: nodes[index + 1].id
       }));
 
       const flow = await Flow.create({
@@ -271,12 +216,13 @@ async function seedDatabase() {
         pipeline: config.pipeline,
         version: '1',
         status: 'active',
-        stations: flowStations,
+        nodes,
+        edges,
         created_by: users[0]._id,
         effective_date: new Date('2025-01-01')
       });
 
-      flows.push({ flow: flow as any, stationCount: flowStations.length });
+      flows.push({ flow: flow as any, stationCount: nodes.length });
     }
     console.log(`✅ Created ${flows.length} flows`);
 
@@ -312,7 +258,10 @@ async function seedDatabase() {
         // Determine status - most completed, some in progress
         const statusRoll = Math.random();
         const status = statusRoll > 0.15 ? 'completed' : 'in_progress';
-        const currentStation = status === 'completed' ? stationCount - 1 : Math.floor(Math.random() * stationCount);
+        
+        // Calculate current node for in-progress batches
+        const currentNodeIndex = status === 'completed' ? stationCount - 1 : Math.floor(Math.random() * stationCount);
+        const currentNodeId = status === 'in_progress' ? flow.nodes[currentNodeIndex].id : undefined;
         
         const operator = operators[Math.floor(Math.random() * operators.length)];
 
@@ -358,7 +307,8 @@ async function seedDatabase() {
           flow_version: '1',
           pipeline: flow.pipeline,
           status,
-          current_station: currentStation,
+          current_node_id: currentNodeId,
+          completed_node_ids: status === 'completed' ? flow.nodes.map((n: any) => n.id) : [],
           material_description: `${flow.pipeline.charAt(0).toUpperCase() + flow.pipeline.slice(1)} material`,
           source: 'Manual Entry',
           fine_grams_received: fineGramsReceived,
@@ -389,7 +339,7 @@ async function seedDatabase() {
     console.log(`   Batches: ${totalBatches}`);
     console.log('\n🔑 Login Credentials:');
     console.log('   Admin:       admin / admin123');
-    console.log('   Operators:   operator1-4 / Password123!');
+    console.log('   Operators:   operator1-14 / Password123!');
     console.log('   Supervisors: supervisor1-2 / Password123!');
     console.log('   Analyst:     analyst1 / Password123!');
     

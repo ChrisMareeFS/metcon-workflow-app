@@ -1,0 +1,36 @@
+================================================================================
+UPLOAD FILES TO DROPLET - Run these commands in PowerShell
+================================================================================
+
+Make sure you're in the project directory:
+cd C:\Users\chris\Documents\FantoFlame\MetCon
+
+Then run these commands one by one:
+
+1. Create directory on droplet:
+ssh root@142.93.224.115 "mkdir -p ~/metcon-workflow-app"
+
+2. Upload backend:
+scp -r backend root@142.93.224.115:~/metcon-workflow-app/
+
+3. Upload frontend:
+scp -r frontend root@142.93.224.115:~/metcon-workflow-app/
+
+4. Upload docker-compose:
+scp docker-compose.prod.yml root@142.93.224.115:~/metcon-workflow-app/
+
+================================================================================
+After uploading, SSH to your droplet and run:
+================================================================================
+
+ssh root@142.93.224.115
+
+Then on the droplet:
+cd ~/metcon-workflow-app
+nano .env
+# (Add your MongoDB connection string and save)
+
+docker compose -f docker-compose.prod.yml up -d --build
+
+================================================================================
+

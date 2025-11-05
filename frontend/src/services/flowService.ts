@@ -56,7 +56,7 @@ export const flowService = {
    * Get active flow for a pipeline
    */
   async getActiveFlow(pipeline: string): Promise<Flow> {
-    const response = await api.get(`/api/flows/active/${pipeline}`);
+    const response = await api.get(`/flows/active/${pipeline}`);
     return response.data.data;
   },
 
@@ -64,7 +64,7 @@ export const flowService = {
    * Get single flow by ID
    */
   async getFlow(id: string): Promise<Flow> {
-    const response = await api.get(`/api/flows/${id}`);
+    const response = await api.get(`/flows/${id}`);
     return response.data.data;
   },
 
@@ -80,7 +80,7 @@ export const flowService = {
    * Update a draft flow
    */
   async updateFlow(id: string, data: Partial<Flow>): Promise<Flow> {
-    const response = await api.patch(`/api/flows/${id}`, data);
+    const response = await api.patch(`/flows/${id}`, data);
     return response.data.data;
   },
 
@@ -88,7 +88,7 @@ export const flowService = {
    * Activate a flow
    */
   async activateFlow(id: string): Promise<Flow> {
-    const response = await api.patch(`/api/flows/${id}/activate`);
+    const response = await api.patch(`/flows/${id}/activate`);
     return response.data.data;
   },
 };

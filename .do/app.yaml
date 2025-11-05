@@ -4,7 +4,7 @@ services:
   # Backend Service
   - name: backend
     github:
-      repo: your-username/your-repo
+      repo: ChrisMareeFS/metcon-workflow-app
       branch: main
       deploy_on_push: true
     source_dir: /backend
@@ -38,7 +38,7 @@ services:
   # Frontend Service
   - name: frontend
     github:
-      repo: your-username/your-repo
+      repo: ChrisMareeFS/metcon-workflow-app
       branch: main
       deploy_on_push: true
     source_dir: /frontend
