@@ -119,6 +119,9 @@ async function seedDatabase() {
 
     // ==================== CREATE STATION TEMPLATES ====================
     console.log('🏭 Creating station templates...');
+    const adminUser = await User.findOne({ username: 'admin' });
+    if (!adminUser) throw new Error('Admin user not found');
+    
     const stationTemplates = [
       {
         template_id: 'receiving',
@@ -168,7 +171,8 @@ async function seedDatabase() {
       await StationTemplate.create({
         ...template,
         active: true,
-        requires_supervisor_approval: ['refining', 'quality'].includes(template.template_id)
+        requires_supervisor_approval: ['refining', 'quality'].includes(template.template_id),
+        created_by: adminUser._id
       });
     }
     console.log(`✅ Created ${stationTemplates.length} station templates`);
@@ -201,7 +205,8 @@ async function seedDatabase() {
     for (const template of checkTemplates) {
       await CheckTemplate.create({
         ...template,
-        active: true
+        active: true,
+        created_by: adminUser._id
       });
     }
     console.log(`✅ Created ${checkTemplates.length} check templates`);
