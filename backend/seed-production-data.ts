@@ -216,7 +216,7 @@ async function seedDatabase() {
 
     // ==================== CREATE FLOWS ====================
     console.log('🌊 Creating flows...');
-    const flows: IFlowDoc[] = [];
+    const flows: { flow: IFlowDoc; stationCount: number }[] = [];
 
     const pipelineConfigs = [
       { name: 'Copper Refining', pipeline: 'copper', stations: ['receiving', 'melting', 'refining', 'casting', 'quality', 'shipping'] },
@@ -276,7 +276,7 @@ async function seedDatabase() {
         effective_date: new Date('2025-01-01')
       });
 
-      flows.push(flow as any);
+      flows.push({ flow: flow as any, stationCount: flowStations.length });
     }
     console.log(`✅ Created ${flows.length} flows`);
 
@@ -287,7 +287,10 @@ async function seedDatabase() {
     const batchesPerPipeline = 30;
     let totalBatches = 0;
 
-    for (const flow of flows) {
+    for (const flowData of flows) {
+      const flow = flowData.flow;
+      const stationCount = flowData.stationCount;
+      
       for (let i = 1; i <= batchesPerPipeline; i++) {
         const month = Math.floor(Math.random() * 12) + 1;
         const day = Math.floor(Math.random() * 28) + 1;
@@ -309,7 +312,7 @@ async function seedDatabase() {
         // Determine status - most completed, some in progress
         const statusRoll = Math.random();
         const status = statusRoll > 0.15 ? 'completed' : 'in_progress';
-        const currentStation = status === 'completed' ? flow.stations.length - 1 : Math.floor(Math.random() * flow.stations.length);
+        const currentStation = status === 'completed' ? stationCount - 1 : Math.floor(Math.random() * stationCount);
         
         const operator = operators[Math.floor(Math.random() * operators.length)];
 
