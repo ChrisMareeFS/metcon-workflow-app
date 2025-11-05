@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
-import { User } from './src/models/User.js';
-import { Flow } from './src/models/Flow.js';
-import { Batch } from './src/models/Batch.js';
-import { StationTemplate } from './src/models/StationTemplate.js';
-import { CheckTemplate } from './src/models/CheckTemplate.js';
+import { User } from './dist/models/User.js';
+import { Flow } from './dist/models/Flow.js';
+import { Batch } from './dist/models/Batch.js';
+import { StationTemplate } from './dist/models/StationTemplate.js';
+import { CheckTemplate } from './dist/models/CheckTemplate.js';
 
 dotenv.config();
 
