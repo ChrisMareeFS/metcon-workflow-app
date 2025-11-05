@@ -34,7 +34,7 @@ export const userService = {
    * Get all users (admin only)
    */
   getAll: async () => {
-    const response = await api.get('/api/users');
+    const response = await api.get('/users');
     return response.data;
   },
 
@@ -50,7 +50,7 @@ export const userService = {
    * Create new user
    */
   create: async (data: CreateUserRequest) => {
-    const response = await api.post('/api/users', data);
+    const response = await api.post('/users', data);
     return response.data;
   },
 

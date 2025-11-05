@@ -48,7 +48,7 @@ export const flowService = {
    * Get all flows
    */
   async getFlows(params?: { status?: string; pipeline?: string }): Promise<Flow[]> {
-    const response = await api.get('/api/flows', { params });
+    const response = await api.get('/flows', { params });
     return response.data.data;
   },
 
@@ -72,7 +72,7 @@ export const flowService = {
    * Create new flow
    */
   async createFlow(data: CreateFlowRequest): Promise<Flow> {
-    const response = await api.post('/api/flows', data);
+    const response = await api.post('/flows', data);
     return response.data.data;
   },
 

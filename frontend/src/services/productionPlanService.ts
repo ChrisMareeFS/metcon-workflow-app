@@ -89,7 +89,7 @@ export const productionPlanService = {
     date_to?: string;
   }): Promise<ProductionPlan[]> {
     const response = await api.get<{ success: boolean; data: ProductionPlan[] }>(
-      '/api/production-plans',
+      '/production-plans',
       { params: filters }
     );
     return response.data.data;

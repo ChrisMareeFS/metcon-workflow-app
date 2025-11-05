@@ -57,7 +57,7 @@ export interface CreateCheckTemplateRequest {
 export const templateService = {
   // Station Templates
   async getStationTemplates(): Promise<StationTemplate[]> {
-    const response = await api.get('/api/station-templates');
+    const response = await api.get('/station-templates');
     return response.data.data;
   },
 
@@ -67,7 +67,7 @@ export const templateService = {
   },
 
   async createStationTemplate(data: CreateStationTemplateRequest): Promise<StationTemplate> {
-    const response = await api.post('/api/station-templates', data);
+    const response = await api.post('/station-templates', data);
     return response.data.data;
   },
 
@@ -93,7 +93,7 @@ export const templateService = {
 
   // Check Templates
   async getCheckTemplates(type?: string): Promise<CheckTemplate[]> {
-    const response = await api.get('/api/check-templates', { params: { type } });
+    const response = await api.get('/check-templates', { params: { type } });
     return response.data.data;
   },
 
@@ -103,7 +103,7 @@ export const templateService = {
   },
 
   async createCheckTemplate(data: CreateCheckTemplateRequest): Promise<CheckTemplate> {
-    const response = await api.post('/api/check-templates', data);
+    const response = await api.post('/check-templates', data);
     return response.data.data;
   },
 

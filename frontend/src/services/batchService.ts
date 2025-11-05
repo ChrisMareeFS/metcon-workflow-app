@@ -135,7 +135,7 @@ export const batchService = {
     limit?: number;
     offset?: number;
   }): Promise<BatchesResponse> {
-    const response = await api.get('/api/batches', { params });
+    const response = await api.get('/batches', { params });
     return response.data.data;
   },
 
@@ -151,7 +151,7 @@ export const batchService = {
    * Create new batch
    */
   async createBatch(data: CreateBatchRequest): Promise<Batch> {
-    const response = await api.post('/api/batches', data);
+    const response = await api.post('/batches', data);
     return response.data.data;
   },
 

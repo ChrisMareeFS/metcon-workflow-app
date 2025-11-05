@@ -37,15 +37,15 @@ api.interceptors.response.use(
 export const analyticsAPI = {
   // Year-to-date summary
   getYTDStats: (year?: number, pipeline?: string) => 
-    api.get('/api/analytics/ytd', { params: { year, pipeline: pipeline === 'all' ? undefined : pipeline } }),
+    api.get('/analytics/ytd', { params: { year, pipeline: pipeline === 'all' ? undefined : pipeline } }),
   
   // Operator performance
   getOperatorPerformance: (filters?: { date_from?: string; date_to?: string }) => 
-    api.get('/api/analytics/operator-performance', { params: filters }),
+    api.get('/analytics/operator-performance', { params: filters }),
   
   // CSV Export
   exportCSV: (reportType: string, filters?: Record<string, any>) => 
-    api.get('/api/analytics/export-csv', { 
+    api.get('/analytics/export-csv', { 
       params: { report_type: reportType, ...filters },
       responseType: 'blob',
     }),
