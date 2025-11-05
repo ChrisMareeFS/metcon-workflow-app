@@ -261,7 +261,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
     }
 
     // Prevent admin from deleting themselves
-    if (req.params.id === req.user?._id.toString()) {
+    if (req.params.id === req.user?.id) {
       return res.status(400).json({
         success: false,
         error: 'Cannot delete your own account',

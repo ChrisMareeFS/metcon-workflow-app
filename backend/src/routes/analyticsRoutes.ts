@@ -1,4 +1,4 @@
-import { Router, NextFunction } from 'express';
+import { Router, Response } from 'express';
 import { Batch } from '../models/Batch.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -608,7 +608,7 @@ router.get('/turnaround-time', async (req: AuthRequest, res, next) => {
  * GET /api/analytics/operator-performance
  * Get operator performance metrics
  */
-router.get('/operator-performance', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get('/operator-performance', async (req: AuthRequest, res: Response) => {
   try {
     const { date_from, date_to } = req.query;
     
@@ -701,8 +701,13 @@ router.get('/operator-performance', authenticate, async (req: AuthRequest, res: 
       },
     });
     return;
-  } catch (error) {
-    return next(error);
+  } catch (error: any) {
+    console.error('Error fetching operator performance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch operator performance',
+    });
+    return;
   }
 });
 
