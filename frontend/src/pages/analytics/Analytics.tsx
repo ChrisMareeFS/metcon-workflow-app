@@ -322,16 +322,6 @@ export default function Analytics() {
 function YTDSummary({ data, kpiSettings, selectedPipeline }: { data: AnalyticsData; kpiSettings: KPISettings; selectedPipeline: string }) {
   const stats = data?.ytd_stats;
 
-  // Get metal symbol based on pipeline
-  const getMetalSymbol = () => {
-    switch (selectedPipeline) {
-      case 'copper': return 'Cu';
-      case 'silver': return 'Ag';
-      case 'gold': return 'Au';
-      default: return 'Metal';
-    }
-  };
-
   const getMetalName = () => {
     switch (selectedPipeline) {
       case 'copper': return 'Copper';

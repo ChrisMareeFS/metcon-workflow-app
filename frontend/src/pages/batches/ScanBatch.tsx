@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createWorker } from 'tesseract.js';
+import { createWorker, PSM } from 'tesseract.js';
 import { batchService } from '../../services/batchService';
 import Button from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -123,7 +123,7 @@ export default function ScanBatch() {
       await worker.setParameters({
         tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,%:-/',
         preserve_interword_spaces: '1',
-        tessedit_pageseg_mode: 3, // Fully automatic page segmentation
+        tessedit_pageseg_mode: PSM.AUTO, // Fully automatic page segmentation
       });
       
       // Extract text from the preprocessed image
