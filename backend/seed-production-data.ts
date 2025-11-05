@@ -341,9 +341,21 @@ async function seedDatabase() {
           });
         }
 
+        const flags = [];
+        if (lossGainPercent < -0.5 || lossGainPercent > 0.5) {
+          flags.push({
+            type: 'out_of_tolerance',
+            reason: `High variance: ${lossGainPercent.toFixed(2)}%`,
+            flagged_at: createdDate,
+            flagged_by: operator._id,
+            notes: 'Automatically flagged during batch processing'
+          });
+        }
+
         await Batch.create({
           batch_number: batchNumber,
           flow_id: flow._id,
+          flow_version: '1',
           pipeline: flow.pipeline,
           status,
           current_station: currentStation,
@@ -358,7 +370,7 @@ async function seedDatabase() {
           created_at: createdDate,
           completed_at: status === 'completed' ? new Date(createdDate.getTime() + fttHours * 60 * 60 * 1000) : undefined,
           events,
-          flags: lossGainPercent < -0.5 || lossGainPercent > 0.5 ? ['high_variance'] : []
+          flags
         });
 
         totalBatches++;
