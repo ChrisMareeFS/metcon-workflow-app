@@ -41,6 +41,7 @@ export default function FlowBuilder() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false);
 
   useEffect(() => {
     loadTemplates();
@@ -330,14 +331,32 @@ export default function FlowBuilder() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Palette */}
-        <TemplatePalette
-          stationTemplates={stationTemplates}
-          checkTemplates={checkTemplates}
-        />
+        {/* Left Palette - Collapsible */}
+        {!isPaletteCollapsed && (
+          <TemplatePalette
+            stationTemplates={stationTemplates}
+            checkTemplates={checkTemplates}
+          />
+        )}
 
         {/* Center Canvas */}
         <div className="flex-1 relative" ref={reactFlowWrapper}>
+          {/* Toggle Palette Button */}
+          <button
+            onClick={() => setIsPaletteCollapsed(!isPaletteCollapsed)}
+            className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-md p-2 hover:bg-gray-50 transition-colors border border-gray-200"
+            title={isPaletteCollapsed ? 'Show Template Library' : 'Hide Template Library'}
+          >
+            {isPaletteCollapsed ? (
+              <svg className="h-5 w-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            )}
+          </button>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -363,10 +382,14 @@ export default function FlowBuilder() {
                   Start Building Your Flow
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Drag stations and checks from the left palette onto the canvas
+                  {isPaletteCollapsed 
+                    ? 'Click the button in the top-left to show the template library'
+                    : 'Drag stations and checks from the left palette onto the canvas'}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Then connect them by dragging from one node to another
+                  {isPaletteCollapsed 
+                    ? 'Then drag them onto the canvas and connect nodes'
+                    : 'Then connect them by dragging from one node to another'}
                 </p>
               </div>
             </div>
