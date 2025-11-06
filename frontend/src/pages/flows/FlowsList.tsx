@@ -4,7 +4,7 @@ import { flowService, Flow } from '../../services/flowService';
 import { templateService, StationTemplate } from '../../services/templateService';
 import Button from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { Plus, Edit, CheckCircle, Archive, Clock, AlertCircle, ArrowRight } from 'lucide-react';
+import { Plus, Edit, CheckCircle, Archive, Clock, AlertCircle, ArrowRight, Settings } from 'lucide-react';
 
 export default function FlowsList() {
   const navigate = useNavigate();
@@ -162,10 +162,16 @@ export default function FlowsList() {
             </button>
           ))}
         </div>
-        <Button variant="primary" onClick={() => navigate('/flows/builder/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Flow
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={() => navigate('/templates/stations')}>
+            <Settings className="h-4 w-4 mr-2" />
+            Manage Stations
+          </Button>
+          <Button variant="primary" onClick={() => navigate('/flows/builder/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Flow
+          </Button>
+        </div>
       </div>
 
       {/* Flows Grid */}
