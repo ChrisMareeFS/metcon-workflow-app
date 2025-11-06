@@ -72,18 +72,18 @@ export const templateService = {
   },
 
   async updateStationTemplate(id: string, data: Partial<StationTemplate>): Promise<StationTemplate> {
-    const response = await api.patch(`/api/station-templates/${id}`, data);
+    const response = await api.patch(`/station-templates/${id}`, data);
     return response.data.data;
   },
 
   async deleteStationTemplate(id: string): Promise<void> {
-    await api.delete(`/api/station-templates/${id}`);
+    await api.delete(`/station-templates/${id}`);
   },
 
   async uploadStationImage(file: File): Promise<string> {
     const formData = new FormData();
     formData.append('image', file);
-    const response = await api.post('/api/station-templates/upload-image', formData, {
+    const response = await api.post('/station-templates/upload-image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

@@ -167,6 +167,10 @@ export default function FlowsList() {
             <Settings className="h-4 w-4 mr-2" />
             Manage Stations
           </Button>
+          <Button variant="secondary" onClick={() => navigate('/templates/checks')}>
+            <Settings className="h-4 w-4 mr-2" />
+            Manage Checks
+          </Button>
           <Button variant="primary" onClick={() => navigate('/flows/builder/new')}>
             <Plus className="h-4 w-4 mr-2" />
             New Flow
