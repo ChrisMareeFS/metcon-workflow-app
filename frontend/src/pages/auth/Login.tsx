@@ -131,19 +131,19 @@ export default function Login() {
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
                   <span className="font-medium text-gray-700">Admin</span>
-                  <span className="font-mono text-gray-600">admin / Admin123!</span>
+                  <span className="font-mono text-gray-600">admin / admin123</span>
                   </div>
                 <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
                   <span className="font-medium text-gray-700">Supervisor</span>
-                  <span className="font-mono text-gray-600">supervisor1 / Supervisor123!</span>
+                  <span className="font-mono text-gray-600">supervisor1 / Password123!</span>
                   </div>
                 <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
                   <span className="font-medium text-gray-700">Operator</span>
-                  <span className="font-mono text-gray-600">operator1 / Operator123!</span>
+                  <span className="font-mono text-gray-600">operator1 / Password123!</span>
                   </div>
                 <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
                   <span className="font-medium text-gray-700">Analyst</span>
-                  <span className="font-mono text-gray-600">analyst1 / Analyst123!</span>
+                  <span className="font-mono text-gray-600">analyst1 / Password123!</span>
                   </div>
                 </div>
               </div>
