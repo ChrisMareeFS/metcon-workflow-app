@@ -215,17 +215,19 @@ export default function FlowsList() {
                     <span className="text-xs text-gray-500">
                       {new Date(flow.updated_at).toLocaleDateString()}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/flows/builder/${flow._id}`);
-                      }}
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/flows/builder/${flow._id}`);
+                        }}
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Manage Stations
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
