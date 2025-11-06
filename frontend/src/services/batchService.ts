@@ -143,7 +143,7 @@ export const batchService = {
    * Get single batch with current step details
    */
   async getBatch(id: string): Promise<Batch> {
-    const response = await api.get(`/api/batches/${id}`);
+    const response = await api.get(`/batches/${id}`);
     return response.data.data;
   },
 
@@ -159,7 +159,7 @@ export const batchService = {
    * Start a batch (move from created to in_progress)
    */
   async startBatch(id: string): Promise<Batch> {
-    const response = await api.post(`/api/batches/${id}/start`);
+    const response = await api.post(`/batches/${id}/start`);
     return response.data.data;
   },
 
@@ -167,7 +167,7 @@ export const batchService = {
    * Complete current step and move to next
    */
   async completeStep(id: string, stepData?: Record<string, any>): Promise<Batch> {
-    const response = await api.post(`/api/batches/${id}/complete-step`, {
+    const response = await api.post(`/batches/${id}/complete-step`, {
       data: stepData,
     });
     return response.data.data;
@@ -177,7 +177,7 @@ export const batchService = {
    * Add an event to batch
    */
   async addEvent(id: string, type: string, data?: Record<string, any>): Promise<Batch> {
-    const response = await api.post(`/api/batches/${id}/events`, {
+    const response = await api.post(`/batches/${id}/events`, {
       type,
       data,
     });
@@ -188,7 +188,7 @@ export const batchService = {
    * Flag a batch with an exception
    */
   async flagBatch(batchId: string, flagData: FlagBatchRequest): Promise<Batch> {
-    const response = await api.post(`/api/batches/${batchId}/flag`, flagData);
+    const response = await api.post(`/batches/${batchId}/flag`, flagData);
     return response.data.data;
   },
 
@@ -196,7 +196,7 @@ export const batchService = {
    * Approve an exception on a flagged batch
    */
   async approveException(batchId: string, approvalData: ApproveExceptionRequest): Promise<Batch> {
-    const response = await api.post(`/api/batches/${batchId}/approve-exception`, approvalData);
+    const response = await api.post(`/batches/${batchId}/approve-exception`, approvalData);
     return response.data.data;
   },
 };
