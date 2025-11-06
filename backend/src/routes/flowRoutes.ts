@@ -24,6 +24,7 @@ const createFlowSchema = z.object({
       x: z.number(),
       y: z.number(),
     }),
+    selectedSops: z.array(z.string()).optional().default([]),
   })).default([]),
   edges: z.array(z.object({
     id: z.string(),

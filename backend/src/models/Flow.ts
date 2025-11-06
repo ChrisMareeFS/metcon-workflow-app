@@ -9,6 +9,7 @@ export interface IFlowNode {
     x: number;
     y: number;
   };
+  selectedSops?: string[]; // Selected SOP steps for this station
 }
 
 // Edge connecting two nodes
@@ -43,6 +44,10 @@ const flowNodeSchema = new Schema<IFlowNode>({
   position: {
     x: { type: Number, required: true },
     y: { type: Number, required: true },
+  },
+  selectedSops: {
+    type: [String],
+    default: [],
   },
 }, { _id: false });
 
