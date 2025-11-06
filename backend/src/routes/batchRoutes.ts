@@ -143,6 +143,7 @@ router.post('/', authorize('operator', 'admin'), async (req: AuthRequest, res, n
       completed_node_ids: [],
       status: 'created',
       priority: data.priority || 'normal',
+      created_by: req.user!.id,
       events: [
         {
           event_id: `evt_${Date.now()}`,
