@@ -44,12 +44,19 @@ export default function FlowBuilder() {
   const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false);
 
   useEffect(() => {
-    loadTemplates();
-    if (id && id !== 'new') {
-      loadFlow(id);
-    } else {
-      initializeNewFlow();
-    }
+    const initialize = async () => {
+      // Load templates first
+      await loadTemplates();
+      
+      // Then load flow after templates are ready
+      if (id && id !== 'new') {
+        await loadFlow(id);
+      } else {
+        initializeNewFlow();
+      }
+    };
+    
+    initialize();
   }, [id]);
 
   const loadTemplates = async () => {
