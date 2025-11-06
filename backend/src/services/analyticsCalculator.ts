@@ -35,12 +35,13 @@ export async function updateAnalyticsOnStepCompletion(
   templateId: string,
   stepData: any
 ): Promise<void> {
-  // Fetch the template to understand what kind of step this is
-  const stationTemplate = await StationTemplate.findOne({ template_id: templateId });
-  const checkTemplate = await CheckTemplate.findOne({ template_id: templateId });
-  
-  const template = stationTemplate || checkTemplate;
-  if (!template) return;
+  try {
+    // Fetch the template to understand what kind of step this is
+    const stationTemplate = await StationTemplate.findOne({ template_id: templateId });
+    const checkTemplate = await CheckTemplate.findOne({ template_id: templateId });
+    
+    const template = stationTemplate || checkTemplate;
+    if (!template) return;
 
   const templateName = template.name.toLowerCase();
   
@@ -160,6 +161,10 @@ export async function updateAnalyticsOnStepCompletion(
       batch.loss_gain_percent = (batch.loss_gain_g / batch.expected_output_g) * 100;
     }
   }
+  } catch (error) {
+    console.error('Error updating analytics on step completion:', error);
+    // Don't throw error - allow step completion to proceed
+  }
 }
 
 /**
@@ -178,23 +183,28 @@ export function calculateFTTRecoveryPercent(batch: IBatch): number | null {
  * Finalize analytics when batch is completed
  */
 export function finalizeAnalytics(batch: IBatch): void {
-  // Ensure all recovery calculations are up to date
-  if (batch.recovery_pours && batch.recovery_pours.length > 0) {
-    batch.total_recovery_g = batch.recovery_pours.reduce((sum, pour) => sum + pour.weight_g, 0);
-    
-    if (batch.fine_grams_received && batch.fine_grams_received > 0) {
-      batch.overall_recovery_percent = (batch.total_recovery_g / batch.fine_grams_received) * 100;
+  try {
+    // Ensure all recovery calculations are up to date
+    if (batch.recovery_pours && batch.recovery_pours.length > 0) {
+      batch.total_recovery_g = batch.recovery_pours.reduce((sum, pour) => sum + pour.weight_g, 0);
+      
+      if (batch.fine_grams_received && batch.fine_grams_received > 0) {
+        batch.overall_recovery_percent = (batch.total_recovery_g / batch.fine_grams_received) * 100;
+      }
     }
-  }
-  
-  // Final loss/gain calculation
-  if (batch.expected_output_g && batch.total_recovery_g) {
-    batch.actual_output_g = batch.total_recovery_g;
-    batch.loss_gain_g = batch.actual_output_g - batch.expected_output_g;
     
-    if (batch.expected_output_g > 0) {
-      batch.loss_gain_percent = (batch.loss_gain_g / batch.expected_output_g) * 100;
+    // Final loss/gain calculation
+    if (batch.expected_output_g && batch.total_recovery_g) {
+      batch.actual_output_g = batch.total_recovery_g;
+      batch.loss_gain_g = batch.actual_output_g - batch.expected_output_g;
+      
+      if (batch.expected_output_g > 0) {
+        batch.loss_gain_percent = (batch.loss_gain_g / batch.expected_output_g) * 100;
+      }
     }
+  } catch (error) {
+    console.error('Error finalizing analytics:', error);
+    // Don't throw error - allow batch completion to proceed
   }
 }
 
