@@ -125,14 +125,6 @@ export default function ScanBatch() {
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
     setSelectedMethod(method);
-      if (planMatch && planMatch[1] && !planMatch[1].match(/^(19|20)\d{2}$/)) {
-        batchNumber = planMatch[1];
-      }
-    }
-    
-    // Strategy 3: Look near "METAL CONCENTRATORS" header
-    if (!batchNumber) {
-      for (let i = 0; i < Math.min(10, lines.length); i++) {
         const line = lines[i].trim();
         const lowerLine = line.toLowerCase();
         if (lowerLine.includes('metal') && lowerLine.includes('concentrator')) {
@@ -691,8 +683,6 @@ export default function ScanBatch() {
         
         // Use the most common supplier, or first one found
         if (suppliers.length > 0) {
-          // Count occurrences
-          const supplierCounts: Record<string, number> = {};
     // Clear sub-options when switching methods
     setSelectedCameraOption(null);
     setSelectedDeviceOption(null);
