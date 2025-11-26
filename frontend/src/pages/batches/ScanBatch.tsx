@@ -125,27 +125,6 @@ export default function ScanBatch() {
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
     setSelectedMethod(method);
-            // Exclude years (19xx, 20xx) and dates
-            if (!num.match(/^(19|20)\d{2}$/) && num.length >= 3) {
-              batchNumber = num;
-              break;
-            }
-          }
-          if (batchNumber) break;
-        }
-        // Also check for numbers that appear after "START TIME" on the same line
-        const afterStartTime = line.split(/start\s+time/i)[1];
-        if (afterStartTime) {
-          const numMatch = afterStartTime.match(/\b(\d{3,4})\b/);
-          if (numMatch && !numMatch[1].match(/^(19|20)\d{2}$/)) {
-            batchNumber = numMatch[1];
-            break;
-          }
-        }
-      }
-    }
-    
-    // Strategy 2: Look for "PRODUCTION PLAN" (with or without "FORM") and extract nearby numbers
     if (!batchNumber) {
       const formIndex = lines.findIndex(l => /production\s+plan/i.test(l));
       if (formIndex !== -1) {
