@@ -18,9 +18,15 @@ export default function Layout({ children }: LayoutProps) {
           isSidebarOpen ? 'lg:pl-72' : 'lg:pl-20'
         }`}
       >
-        <div className="p-6 sm:p-8 lg:p-12 max-w-7xl mx-auto">
-          {children}
-        </div>
+        {/* Check if child is a full-screen component (FlowBuilder, KanbanBoard) */}
+        {typeof (children as any)?.type === 'function' && 
+         ((children as any).type.name === 'FlowBuilder' || (children as any).type.name === 'KanbanBoard') ? (
+          children
+        ) : (
+          <div className="p-6 sm:p-8 lg:p-12 max-w-7xl mx-auto">
+            {children}
+          </div>
+        )}
       </main>
     </div>
   );

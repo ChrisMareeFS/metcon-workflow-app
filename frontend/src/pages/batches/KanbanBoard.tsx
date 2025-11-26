@@ -128,7 +128,7 @@ export default function KanbanBoard() {
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden" style={{ margin: 0, padding: 0 }}>
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4 flex-shrink-0 shadow-sm">
         <div className="flex items-center justify-between">
