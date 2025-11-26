@@ -6,11 +6,12 @@ import Button from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import { Camera, FileText, Loader2, Upload, X, CheckCircle } from 'lucide-react';
+import ScanningMethods, { ScanningMethod } from '../../components/batches/ScanningMethods';
 
 export default function ScanBatch() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isManualEntry, setIsManualEntry] = useState(true);
+  const [selectedMethod, setSelectedMethod] = useState<ScanningMethod>('manual');
   const [isCreating, setIsCreating] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scannedImage, setScannedImage] = useState<string | null>(null);
@@ -549,43 +550,51 @@ export default function ScanBatch() {
           <p className="text-gray-600 mt-1">Scan job paper or enter batch details manually</p>
         </div>
 
-        {/* Method Selection */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <button
-            onClick={() => setIsManualEntry(false)}
-            className={`p-6 rounded-lg border-2 transition-all ${
-              !isManualEntry
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-300 bg-white hover:border-gray-400'
-            }`}
-          >
-            <Camera className={`h-8 w-8 mx-auto mb-3 ${!isManualEntry ? 'text-primary-600' : 'text-gray-600'}`} />
-            <h3 className="font-semibold text-gray-900 mb-1">Scan Job Paper</h3>
-            <p className="text-sm text-gray-500">AI extracts batch details</p>
-            <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-              Available
-            </span>
-          </button>
-
-          <button
-            onClick={() => setIsManualEntry(true)}
-            className={`p-6 rounded-lg border-2 transition-all ${
-              isManualEntry
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-300 bg-white hover:border-gray-400'
-            }`}
-          >
-            <FileText className="h-8 w-8 mx-auto mb-3 text-primary-600" />
-            <h3 className="font-semibold text-gray-900 mb-1">Manual Entry</h3>
-            <p className="text-sm text-gray-500">Enter batch details by hand</p>
-            <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-              Available
-            </span>
-          </button>
+        {/* Scanning Methods Selection */}
+        <div className="mb-6">
+          <ScanningMethods
+            selectedMethod={selectedMethod}
+            onMethodSelect={(method) => {
+              setSelectedMethod(method);
+            }}
+            onQRCodeScanned={(data) => {
+              console.log('QR Code data:', data);
+              // Parse QR code data - could be JSON or just batch number
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.batch_number) {
+                  setFormData({ ...formData, batch_number: parsed.batch_number });
+                }
+              } catch {
+                // If not JSON, assume it's just the batch number
+                setFormData({ ...formData, batch_number: data });
+              }
+              // After scanning, show form to complete
+              setSelectedMethod('manual');
+            }}
+            onRFIDScanned={(data) => {
+              console.log('RFID data:', data);
+              // Parse RFID data - could be batch number or JSON
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.batch_number) {
+                  setFormData({ ...formData, batch_number: parsed.batch_number });
+                }
+              } catch {
+                setFormData({ ...formData, batch_number: data });
+              }
+              setSelectedMethod('manual');
+            }}
+            onBarcodeScanned={(data) => {
+              console.log('Barcode data:', data);
+              setFormData({ ...formData, batch_number: data });
+              setSelectedMethod('manual');
+            }}
+          />
         </div>
 
         {/* Manual Entry Form */}
-        {isManualEntry && (
+        {selectedMethod === 'manual' && (
           <Card>
             <CardHeader>
               <CardTitle>Enter Batch Details</CardTitle>
@@ -742,7 +751,7 @@ export default function ScanBatch() {
         )}
 
         {/* Paper Scan Interface */}
-        {!isManualEntry && (
+        {selectedMethod === 'paper' && (
           <Card>
             <CardHeader>
               <CardTitle>Scan Job Paper</CardTitle>
@@ -780,7 +789,7 @@ export default function ScanBatch() {
                       </Button>
                     </div>
                   </div>
-                  <Button variant="secondary" onClick={() => setIsManualEntry(true)} className="w-full">
+                  <Button variant="secondary" onClick={() => setSelectedMethod('manual')} className="w-full">
                     Use Manual Entry Instead
                   </Button>
                 </div>
