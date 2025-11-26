@@ -124,7 +124,6 @@ export default function ScanBatch() {
 
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
-        const line = lines[i];
         // Look for isolated 3-4 digit numbers (likely in a box)
         const isolatedNumbers = line.match(/\b(\d{3,4})\b/g);
         if (isolatedNumbers) {
