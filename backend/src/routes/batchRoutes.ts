@@ -36,7 +36,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
       .sort({ created_at: -1 })
       .limit(Number(limit))
       .skip(Number(offset))
-      .populate('flow_id', 'name version pipeline')
+      .populate('flow_id') // Populate full flow including nodes and edges
       .populate('events.user_id', 'username role');
 
     const total = await Batch.countDocuments(filter);

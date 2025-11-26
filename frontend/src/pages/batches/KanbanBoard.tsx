@@ -251,19 +251,31 @@ export default function KanbanBoard() {
                       )}
 
                       {/* Progress */}
-                      <div className="text-xs text-gray-500 mb-2">
-                        {batch.completed_node_ids.length} of {flow.nodes.length} steps
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
-                        <div
-                          className={`h-1.5 rounded-full ${getPipelineColor(batch.pipeline)}`}
-                          style={{
-                            width: `${(batch.completed_node_ids.length / flow.nodes.length) * 100}%`
-                          }}
-                        />
-                      </div>
+                      {(() => {
+                        // Use batch's own flow if populated, otherwise use active flow
+                        const batchFlow = (batch.flow_id && typeof batch.flow_id === 'object' && (batch.flow_id as any).nodes) 
+                          ? (batch.flow_id as any) 
+                          : flow;
+                        const totalSteps = batchFlow?.nodes?.length || 0;
+                        const completedSteps = batch.completed_node_ids?.length || 0;
+                        
+                        return (
+                          <>
+                            <div className="text-xs text-gray-500 mb-2">
+                              {completedSteps} of {totalSteps} steps
+                            </div>
+                            {/* Progress Bar */}
+                            <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
+                              <div
+                                className={`h-1.5 rounded-full ${getPipelineColor(batch.pipeline)}`}
+                                style={{
+                                  width: `${totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0}%`
+                                }}
+                              />
+                            </div>
+                          </>
+                        );
+                      })()}
 
                       {/* Flags */}
                       {batch.flags && batch.flags.length > 0 && (
