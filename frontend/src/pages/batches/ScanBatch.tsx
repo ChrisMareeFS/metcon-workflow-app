@@ -16,7 +16,9 @@ import {
   Loader2, 
   CheckCircle,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  X
 } from 'lucide-react';
 
 type StartMethod = 'camera' | 'devices' | 'manual';
@@ -56,8 +58,21 @@ export default function ScanBatch() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    // Check file type
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      alert('Please select an image file (JPG, PNG) or PDF');
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File is too large. Please choose a file smaller than 10MB.');
+      return;
+    }
+
+    // For PDFs, show message (OCR doesn't work on PDFs directly)
+    if (file.type === 'application/pdf') {
+      alert('PDF files are not supported for automatic scanning. Please convert to an image (JPG or PNG) first, or use manual entry.');
       return;
     }
 
@@ -65,6 +80,11 @@ export default function ScanBatch() {
     reader.onload = async (event) => {
       const imageData = event.target?.result as string;
       setScannedImage(imageData);
+      
+      // Automatically proceed to Step 2 after file is selected
+      setCurrentStep(2);
+      
+      // Process the image for OCR
       await processImage(imageData);
     };
     reader.readAsDataURL(file);
@@ -422,10 +442,38 @@ export default function ScanBatch() {
                           <Camera className="h-5 w-5 text-gray-600" />
                           <div className="flex-1">
                             <div className="font-semibold text-gray-900">Scan Job Paper</div>
-                            <div className="text-xs text-gray-600">Take a photo of the job sheet.</div>
+                            <div className="text-xs text-gray-600">Take a photo or upload a file.</div>
                           </div>
                         </div>
                       </button>
+                      
+                      {/* Upload/Photo buttons when paper is selected */}
+                      {selectedCameraOption === 'paper' && (
+                        <div className="mt-3 space-y-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fileInputRef.current?.click();
+                            }}
+                            className="w-full p-3 rounded-lg border-2 border-primary-500 bg-primary-50 hover:bg-primary-100 transition-all flex items-center justify-center gap-2"
+                          >
+                            <Camera className="h-5 w-5 text-primary-600" />
+                            <span className="font-semibold text-primary-900">Take Photo</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fileInputRef.current?.click();
+                            }}
+                            className="w-full p-3 rounded-lg border-2 border-gray-300 bg-white hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                          >
+                            <Upload className="h-5 w-5 text-gray-600" />
+                            <span className="font-semibold text-gray-900">Upload File</span>
+                          </button>
+                        </div>
+                      )}
                       
                       <button
                         type="button"
@@ -643,11 +691,11 @@ export default function ScanBatch() {
               </Button>
             )}
 
-            {/* Hidden file input for paper scanning */}
+            {/* Hidden file input for paper scanning and uploads */}
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.pdf"
               capture="environment"
               onChange={handleFileSelect}
               className="hidden"
@@ -680,18 +728,75 @@ export default function ScanBatch() {
               </div>
             )}
 
+            {/* Upload Area for Paper Scan (if selected but no image yet) */}
+            {selectedMethod === 'camera' && selectedCameraOption === 'paper' && !scannedImage && !isScanning && (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 sm:p-12 text-center bg-white">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="p-4 bg-gray-100 rounded-full">
+                    <Upload className="h-8 w-8 sm:h-12 sm:w-12 text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                      Upload or Take Photo
+                    </h3>
+                    <p className="text-sm sm:text-base text-gray-600 mb-4">
+                      Choose a file from your device or take a new photo
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1 sm:flex-initial"
+                    >
+                      <Camera className="h-5 w-5 mr-2" />
+                      Take Photo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1 sm:flex-initial"
+                    >
+                      <Upload className="h-5 w-5 mr-2" />
+                      Upload File
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Supported formats: JPG, PNG, PDF
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Scanned Image Preview */}
             {scannedImage && !isScanning && (
               <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <p className="text-green-900 font-medium">
-                    Photo scanned! Please check the details below.
-                  </p>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <p className="text-green-900 font-medium">
+                      File uploaded! Please check the details below.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScannedImage(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    className="p-2 text-gray-600 hover:text-red-600 transition-colors"
+                    title="Remove file"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
                 <img
                   src={scannedImage}
-                  alt="Scanned job paper"
+                  alt="Uploaded job paper"
                   className="w-full max-w-md mx-auto rounded-lg border-2 border-gray-200"
                 />
               </div>
