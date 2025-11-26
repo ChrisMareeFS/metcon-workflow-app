@@ -6,14 +6,12 @@ import {
   Package,
   GitBranch,
   BarChart3,
-  Upload,
   Settings,
   LogOut,
   Menu,
   X,
   User,
   ChevronDown,
-  FileText,
   ListChecks,
   Boxes,
 } from 'lucide-react';
@@ -60,22 +58,6 @@ export default function Navigation({ onSidebarToggle }: NavigationProps) {
       icon: <GitBranch className="h-5 w-5" />,
       path: '/flows',
       roles: ['admin'],
-    },
-    {
-      name: 'Templates',
-      icon: <FileText className="h-5 w-5" />,
-      path: '/templates',
-      roles: ['admin'],
-      children: [
-        { name: 'Station Library', icon: <Boxes className="h-4 w-4" />, path: '/templates/stations' },
-        { name: 'Check Library', icon: <ListChecks className="h-4 w-4" />, path: '/templates/checks' },
-      ],
-    },
-    {
-      name: 'Production Plans',
-      icon: <Upload className="h-5 w-5" />,
-      path: '/production-plans/upload',
-      roles: ['operator', 'admin'],
     },
     {
       name: 'Analytics',
