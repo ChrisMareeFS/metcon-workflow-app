@@ -125,23 +125,6 @@ export default function ScanBatch() {
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
     setSelectedMethod(method);
-          const numbersOnLine = line.match(/\b(\d{3,4})\b/g);
-          if (numbersOnLine && numbersOnLine.length > 0) {
-            for (const num of numbersOnLine) {
-              if (!num.match(/^(19|20)\d{2}$/) && num.length >= 3) {
-                batchNumber = num;
-                break;
-              }
-            }
-            if (batchNumber) break;
-          }
-        }
-      }
-    }
-    
-    // Strategy 4: Look for isolated numbers in header area (first 8 lines)
-    if (!batchNumber) {
-      for (let i = 0; i < Math.min(8, lines.length); i++) {
         const line = lines[i].trim();
         // Skip lines that are clearly dates or times
         if (line.match(/\d{4}[\/\-]\d{2}[\/\-]\d{2}/) || line.match(/\d{2}:\d{2}/)) {
@@ -675,8 +658,6 @@ export default function ScanBatch() {
             }
           }
         }
-        
-        console.log('All suppliers found:', suppliers);
         
     // Clear sub-options when switching methods
     setSelectedCameraOption(null);
