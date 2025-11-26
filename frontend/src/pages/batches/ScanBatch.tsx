@@ -120,16 +120,9 @@ export default function ScanBatch() {
     }
   };
 
-  // Removed - now using Gemini Vision API instead of Tesseract OCR
-  // const parseOcrText = (text: string) => {
-    const lowerText = text.toLowerCase();
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-    
-    let batchNumber = '';
-    
-    // Strategy 1: Look for number next to "START TIME" (most reliable for this form)
-    const startTimeIndex = lines.findIndex(l => /start\s+time/i.test(l));
-    if (startTimeIndex !== -1) {
+  // Removed parseOcrText function - now using Gemini Vision API instead of Tesseract OCR
+
+  // Handle method selection
       // Check the same line and next few lines for isolated numbers
       for (let i = startTimeIndex; i < Math.min(startTimeIndex + 3, lines.length); i++) {
         const line = lines[i];
@@ -790,16 +783,6 @@ export default function ScanBatch() {
       carat = caratMatch[1];
     }
     
-    return {
-      batch_number: batchNumber,
-      pipeline,
-      initial_weight: initialWeight,
-      priority: 'normal' as const,
-      supplier,
-      carat,
-    };
-  }; */
-
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
     setSelectedMethod(method);
