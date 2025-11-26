@@ -124,7 +124,6 @@ export default function ScanBatch() {
 
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
-        // Look for isolated 3-4 digit numbers (likely in a box)
         const isolatedNumbers = line.match(/\b(\d{3,4})\b/g);
         if (isolatedNumbers) {
           for (const num of isolatedNumbers) {
@@ -765,15 +764,6 @@ export default function ScanBatch() {
       }
     }
     
-    // Strategy 2: Fallback - simple pattern match
-    if (!supplier) {
-      const supplierMatch = text.match(/supplier[:\s]+([A-Za-z0-9\s&().-]+?)(?:\s{2,}|\d|$|%|silver|gold)/i);
-      if (supplierMatch) {
-        supplier = supplierMatch[1].trim();
-      }
-    }
-    
-  // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
     setSelectedMethod(method);
     // Clear sub-options when switching methods
