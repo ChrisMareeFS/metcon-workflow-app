@@ -145,6 +145,62 @@ export default function StepRunner() {
 
     setIsCompleting(true);
     try {
+      // Helper function to sanitize data - remove circular references and non-serializable values
+      const sanitizeData = (obj: any): any => {
+        if (obj === null || obj === undefined) return obj;
+        
+        // Handle primitives
+        if (typeof obj !== 'object') return obj;
+        
+        // Handle Date objects
+        if (obj instanceof Date) return obj.toISOString();
+        
+        // Handle File objects
+        if (obj instanceof File) {
+          return {
+            name: obj.name,
+            size: obj.size,
+            type: obj.type,
+            lastModified: obj.lastModified,
+          };
+        }
+        
+        // Handle arrays
+        if (Array.isArray(obj)) {
+          return obj.map(item => sanitizeData(item));
+        }
+        
+        // Handle plain objects - skip DOM elements and React components
+        if (obj.constructor && obj.constructor.name && (
+          obj.constructor.name === 'HTMLButtonElement' ||
+          obj.constructor.name === 'HTMLElement' ||
+          obj.constructor.name === 'Element' ||
+          obj.constructor.name.startsWith('HTML') ||
+          obj.constructor.name === 'MI' || // React internal
+          obj._reactFiber ||
+          obj.stateNode
+        )) {
+          return undefined; // Skip circular/DOM references
+        }
+        
+        // Recursively sanitize object properties
+        const sanitized: Record<string, any> = {};
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            try {
+              const value = sanitizeData(obj[key]);
+              if (value !== undefined) {
+                sanitized[key] = value;
+              }
+            } catch (e) {
+              // Skip properties that can't be serialized
+              console.warn(`Skipping non-serializable property: ${key}`, e);
+            }
+          }
+        }
+        return sanitized;
+      };
+
       // Prepare step data - use override if provided (from MassCheckStep)
       let stepData: Record<string, any>;
       
@@ -153,7 +209,7 @@ export default function StepRunner() {
           template_id: template.template_id,
           template_name: template.name,
           completed_at: new Date().toISOString(),
-          ...overrideStepData,
+          ...sanitizeData(overrideStepData),
         };
       } else {
         stepData = {
@@ -202,8 +258,11 @@ export default function StepRunner() {
         }
       }
 
+      // Sanitize the final stepData before sending
+      const sanitizedStepData = sanitizeData(stepData);
+
       // Complete step
-      const updatedBatch = await batchService.completeStep(batch._id, stepData);
+      const updatedBatch = await batchService.completeStep(batch._id, sanitizedStepData);
       
       // Check if batch is complete
       if (updatedBatch.status === 'completed') {
