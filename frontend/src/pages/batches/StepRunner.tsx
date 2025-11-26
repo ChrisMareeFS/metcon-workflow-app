@@ -250,7 +250,7 @@ export default function StepRunner() {
       }
 
       // Complete step
-      const updatedBatch = await batchService.completeStep(batch._id, sanitizedStepData);
+      const updatedBatch = await batchService.completeStep(batch._id, stepData);
       
       // Check if batch is complete
       if (updatedBatch.status === 'completed') {
