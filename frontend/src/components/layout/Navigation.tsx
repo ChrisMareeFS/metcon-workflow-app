@@ -257,11 +257,9 @@ export default function Navigation({ onSidebarToggle }: NavigationProps) {
           />
           <aside className="fixed top-0 left-0 bottom-0 w-72 bg-white border-r border-gray-200 z-50 lg:hidden flex flex-col">
             {/* Mobile Sidebar Header */}
-            <div className="p-6 border-b border-gray-200">
-              <h1 className="text-xl font-semibold text-gray-900">
-                MetCon Flows
-              </h1>
-              <p className="text-xs text-gray-500 mt-1">
+            <div className="p-6 border-b border-gray-200 flex items-center gap-3">
+              <img src="/metcon-logo.svg" alt="MetCon Logo" className="h-8" />
+              <p className="text-xs text-gray-500">
                 Precious Metals
               </p>
             </div>
