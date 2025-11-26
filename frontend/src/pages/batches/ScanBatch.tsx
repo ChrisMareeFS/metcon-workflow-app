@@ -300,9 +300,15 @@ export default function ScanBatch() {
 
     setIsCreating(true);
     try {
+      if (!formData.pipeline || (formData.pipeline !== 'copper' && formData.pipeline !== 'silver' && formData.pipeline !== 'gold')) {
+        setErrors({ ...errors, pipeline: 'Please choose a metal type.' });
+        setIsCreating(false);
+        return;
+      }
+      
       const batch = await batchService.createBatch({
         batch_number: formData.batch_number,
-        pipeline: formData.pipeline,
+        pipeline: formData.pipeline as 'copper' | 'silver' | 'gold',
         initial_weight: formData.initial_weight ? parseFloat(formData.initial_weight) : undefined,
         priority: formData.priority,
       });
