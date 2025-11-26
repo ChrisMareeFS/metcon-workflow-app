@@ -1,4 +1,5 @@
 import { ReactNode, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navigation from './Navigation';
 
 interface LayoutProps {
@@ -7,6 +8,11 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const location = useLocation();
+  
+  // Routes that should be full screen (no padding)
+  const fullScreenRoutes = ['/flows/builder/', '/batches/kanban'];
+  const isFullScreen = fullScreenRoutes.some(route => location.pathname.startsWith(route));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -18,9 +24,8 @@ export default function Layout({ children }: LayoutProps) {
           isSidebarOpen ? 'lg:pl-72' : 'lg:pl-20'
         }`}
       >
-        {/* Check if child is a full-screen component (FlowBuilder, KanbanBoard) */}
-        {typeof (children as any)?.type === 'function' && 
-         ((children as any).type.name === 'FlowBuilder' || (children as any).type.name === 'KanbanBoard') ? (
+        {/* Full screen routes skip padding container */}
+        {isFullScreen ? (
           children
         ) : (
           <div className="p-6 sm:p-8 lg:p-12 max-w-7xl mx-auto">
