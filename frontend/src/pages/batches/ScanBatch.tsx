@@ -125,9 +125,6 @@ export default function ScanBatch() {
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
     setSelectedMethod(method);
-        const line = lines[i].trim();
-        const lowerLine = line.toLowerCase();
-        if (lowerLine.includes('metal') && lowerLine.includes('concentrator')) {
           const numbersOnLine = line.match(/\b(\d{3,4})\b/g);
           if (numbersOnLine && numbersOnLine.length > 0) {
             for (const num of numbersOnLine) {
@@ -681,8 +678,6 @@ export default function ScanBatch() {
         
         console.log('All suppliers found:', suppliers);
         
-        // Use the most common supplier, or first one found
-        if (suppliers.length > 0) {
     // Clear sub-options when switching methods
     setSelectedCameraOption(null);
     setSelectedDeviceOption(null);
