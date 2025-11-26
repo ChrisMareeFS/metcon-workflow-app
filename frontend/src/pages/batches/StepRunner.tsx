@@ -145,71 +145,44 @@ export default function StepRunner() {
 
     setIsCompleting(true);
     try {
-      // Helper function to sanitize data - remove circular references and non-serializable values
-      const sanitizeData = (obj: any): any => {
-        if (obj === null || obj === undefined) return obj;
-        
-        // Handle primitives
-        if (typeof obj !== 'object') return obj;
-        
-        // Handle Date objects
-        if (obj instanceof Date) return obj.toISOString();
-        
-        // Handle File objects
-        if (obj instanceof File) {
-          return {
-            name: obj.name,
-            size: obj.size,
-            type: obj.type,
-            lastModified: obj.lastModified,
-          };
-        }
-        
-        // Handle arrays
-        if (Array.isArray(obj)) {
-          return obj.map(item => sanitizeData(item));
-        }
-        
-        // Handle plain objects - skip DOM elements and React components
-        if (obj.constructor && obj.constructor.name && (
-          obj.constructor.name === 'HTMLButtonElement' ||
-          obj.constructor.name === 'HTMLElement' ||
-          obj.constructor.name === 'Element' ||
-          obj.constructor.name.startsWith('HTML') ||
-          obj.constructor.name === 'MI' || // React internal
-          obj._reactFiber ||
-          obj.stateNode
-        )) {
-          return undefined; // Skip circular/DOM references
-        }
-        
-        // Recursively sanitize object properties
-        const sanitized: Record<string, any> = {};
-        for (const key in obj) {
-          if (obj.hasOwnProperty(key)) {
-            try {
-              const value = sanitizeData(obj[key]);
-              if (value !== undefined) {
-                sanitized[key] = value;
-              }
-            } catch (e) {
-              // Skip properties that can't be serialized
-              console.warn(`Skipping non-serializable property: ${key}`, e);
-            }
-          }
-        }
-        return sanitized;
-      };
-
       // Prepare step data - use override if provided (from MassCheckStep)
       let stepData: Record<string, any>;
       
       if (overrideStepData) {
+        // Only include plain JSON-serializable properties from overrideStepData
+        const cleanOverride: Record<string, any> = {};
+        for (const key in overrideStepData) {
+          const value = overrideStepData[key];
+          // Skip File objects, DOM elements, and functions
+          if (value instanceof File) {
+            // Skip File objects - we only need metadata
+            continue;
+          }
+          if (value && typeof value === 'object' && (
+            value.constructor?.name?.startsWith('HTML') ||
+            value._reactFiber ||
+            value.stateNode
+          )) {
+            // Skip DOM/React objects
+            continue;
+          }
+          if (typeof value === 'function') {
+            // Skip functions
+            continue;
+          }
+          // Include primitive values, plain objects, arrays, dates
+          if (value instanceof Date) {
+            cleanOverride[key] = value.toISOString();
+          } else {
+            cleanOverride[key] = value;
+          }
+        }
+        
         stepData = {
           template_id: template.template_id,
           template_name: template.name,
           completed_at: new Date().toISOString(),
-          ...sanitizeData(overrideStepData),
+          ...cleanOverride,
         };
       } else {
         stepData = {
@@ -258,8 +231,23 @@ export default function StepRunner() {
         }
       }
 
-      // Sanitize the final stepData before sending
-      const sanitizedStepData = sanitizeData(stepData);
+      // Final check - ensure stepData is JSON serializable
+      try {
+        JSON.stringify(stepData);
+      } catch (e) {
+        console.error('Step data contains non-serializable values:', e);
+        // Remove any remaining problematic properties
+        const cleaned: Record<string, any> = {};
+        for (const key in stepData) {
+          try {
+            JSON.stringify(stepData[key]);
+            cleaned[key] = stepData[key];
+          } catch {
+            console.warn(`Removing non-serializable property: ${key}`);
+          }
+        }
+        stepData = cleaned;
+      }
 
       // Complete step
       const updatedBatch = await batchService.completeStep(batch._id, sanitizedStepData);
