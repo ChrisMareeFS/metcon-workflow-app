@@ -424,22 +424,122 @@ export default function ScanBatch() {
     });
     
     let initialWeight = '';
-    const summaryIndex = lines.findIndex(l => /summary/i.test(l));
-    if (summaryIndex !== -1) {
-      for (let i = summaryIndex; i < Math.min(summaryIndex + 5, lines.length); i++) {
-        const numbersInLine = lines[i].match(/\d+(?:[.,]\d+)?/g);
-        if (numbersInLine && numbersInLine.length > 0) {
-          for (const numStr of numbersInLine) {
-            const num = parseFloat(numStr.replace(',', '.'));
-            if (num >= 10 && num <= 100000) {
-              initialWeight = numStr.replace(',', '.');
-              break;
+    
+    // Strategy 1: Find weight from table summary row (bottom right area)
+    // Look for the table header to identify weight column position
+    const weightColumnKeywords = ['p. weight', 'f weight', 'weight', 'p weight', 'pure weight', 'fine weight'];
+    let weightColumnIndex = -1;
+    
+    // Find the header row with weight column
+    const headerIndex = lines.findIndex(l => {
+      const lower = l.toLowerCase();
+      const hasWeight = weightColumnKeywords.some(keyword => lower.includes(keyword));
+      const hasColumns = lower.includes('supplier') || lower.includes('no') || lower.includes('pc num');
+      return hasWeight && hasColumns;
+    });
+    
+    if (headerIndex !== -1) {
+      // Found header, determine which column is weight
+      const headerLine = lines[headerIndex].toLowerCase();
+      const headerParts = headerLine.split(/\s{2,}|\t/).filter(p => p.trim());
+      
+      // Find weight column index
+      for (let i = 0; i < headerParts.length; i++) {
+        const part = headerParts[i].toLowerCase();
+        if (weightColumnKeywords.some(keyword => part.includes(keyword))) {
+          weightColumnIndex = i;
+          break;
+        }
+      }
+      
+      // Now find the summary row (usually at the bottom of the table)
+      const summaryIndex = lines.findIndex((l, idx) => {
+        if (idx <= headerIndex) return false;
+        const lower = l.toLowerCase();
+        return lower.includes('summary') || 
+               lower.includes('total') || 
+               (lower.includes('carolt') || lower.includes('carat')); // Common summary row identifier
+      });
+      
+      if (summaryIndex !== -1) {
+        const summaryLine = lines[summaryIndex];
+        // Try to split by multiple spaces or tabs (table format)
+        const summaryParts = summaryLine.split(/\s{2,}|\t/).filter(p => p.trim());
+        
+        // If we found the weight column index, use it
+        if (weightColumnIndex >= 0 && summaryParts.length > weightColumnIndex) {
+          const weightValue = summaryParts[weightColumnIndex].trim();
+          // Extract number from the value (remove any non-numeric characters except comma and period)
+          const weightMatch = weightValue.match(/[\d,]+\.?\d*/);
+          if (weightMatch) {
+            const weightNum = parseFloat(weightMatch[0].replace(/,/g, ''));
+            if (!isNaN(weightNum) && weightNum >= 10 && weightNum <= 1000000) {
+              initialWeight = weightMatch[0].replace(/,/g, '');
             }
           }
-          if (initialWeight) break;
+        } else {
+          // Fallback: look for large numbers in the summary row (likely weight totals)
+          // Weight is usually one of the larger numbers in the summary
+          const numbersInSummary = summaryLine.match(/[\d,]+\.?\d*/g);
+          if (numbersInSummary) {
+            // Find the largest reasonable number (likely total weight)
+            let maxWeight = 0;
+            for (const numStr of numbersInSummary) {
+              const num = parseFloat(numStr.replace(/,/g, ''));
+              if (!isNaN(num) && num >= 100 && num <= 1000000 && num > maxWeight) {
+                maxWeight = num;
+                initialWeight = numStr.replace(/,/g, '');
+              }
+            }
+          }
         }
       }
     }
+    
+    // Strategy 2: If no weight found, look for summary section with large numbers
+    if (!initialWeight) {
+      const summaryIndex = lines.findIndex(l => /summary/i.test(l));
+      if (summaryIndex !== -1) {
+        // Look in summary row and a few rows after
+        for (let i = summaryIndex; i < Math.min(summaryIndex + 5, lines.length); i++) {
+          const line = lines[i];
+          // Look for numbers with commas (formatted large numbers)
+          const largeNumbers = line.match(/[\d,]+\.?\d*/g);
+          if (largeNumbers) {
+            for (const numStr of largeNumbers) {
+              const num = parseFloat(numStr.replace(/,/g, ''));
+              // Weight is typically a large number (100+ and reasonable max)
+              if (!isNaN(num) && num >= 100 && num <= 1000000) {
+                initialWeight = numStr.replace(/,/g, '');
+                break;
+              }
+            }
+            if (initialWeight) break;
+          }
+        }
+      }
+    }
+    
+    // Strategy 3: Look for weight patterns in the text
+    if (!initialWeight) {
+      const weightPatterns = [
+        /(?:total|sum|weight)[:\s]+([\d,]+\.?\d*)/i,
+        /([\d,]+\.?\d*)\s*(?:kg|g|weight)/i,
+      ];
+      
+      for (const pattern of weightPatterns) {
+        const match = text.match(pattern);
+        if (match) {
+          const num = parseFloat(match[1].replace(/,/g, ''));
+          if (!isNaN(num) && num >= 10 && num <= 1000000) {
+            initialWeight = match[1].replace(/,/g, '');
+            break;
+          }
+        }
+      }
+    }
+    
+    console.log('Weight Detection:', { initialWeight, weightColumnIndex });
     
     let supplier = '';
     const supplierMatch = text.match(/supplier[:\s]+([A-Za-z0-9\s&.-]+?)(?:\s{2,}|\d|$)/i);
