@@ -95,35 +95,51 @@ export default function ScanBatch() {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         
         if (!ctx) {
           reject(new Error('Failed to get canvas context'));
           return;
         }
         
-        const scale = 2;
+        // Scale up for better OCR accuracy (3x for small text)
+        const scale = 3;
         canvas.width = img.width * scale;
         canvas.height = img.height * scale;
+        
+        // Use high-quality image rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         
+        // Enhanced preprocessing: grayscale, contrast enhancement, adaptive thresholding
         for (let i = 0; i < data.length; i += 4) {
-          const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-          const threshold = 128;
-          const contrast = 1.5;
-          let value = (gray - threshold) * contrast + threshold;
-          value = value > 150 ? 255 : 0;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Convert to grayscale with better weights
+          let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          
+          // Enhance contrast (make dark text darker, light background lighter)
+          const contrast = 1.8;
+          gray = (gray - 128) * contrast + 128;
+          
+          // Adaptive thresholding - better for varying lighting
+          const threshold = 140;
+          const value = gray > threshold ? 255 : 0;
           
           data[i] = value;
           data[i + 1] = value;
           data[i + 2] = value;
+          // Keep alpha channel
         }
         
         ctx.putImageData(imageData, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+        resolve(canvas.toDataURL('image/png', 1.0));
       };
       
       img.onerror = () => reject(new Error('Failed to load image'));
@@ -139,13 +155,29 @@ export default function ScanBatch() {
       worker = await createWorker('eng', 1);
       
       await worker.setParameters({
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,%:-/',
+        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,%:-/()',
         preserve_interword_spaces: '1',
-        tessedit_pageseg_mode: PSM.AUTO,
+        tessedit_pageseg_mode: PSM.AUTO_OSD, // Auto orientation and script detection
+        tessedit_ocr_engine_mode: '1', // Neural nets LSTM engine only
+        classify_bln_numeric_mode: '1', // Better number recognition
+        textord_min_linesize: '2.5', // Better for small text
       });
       
-      const { data: { text } } = await worker.recognize(processedImage);
+      const { data: { text, confidence } } = await worker.recognize(processedImage);
+      
+      // Log OCR results for debugging
+      console.log('OCR Confidence:', confidence);
+      console.log('OCR Raw Text (first 500 chars):', text.substring(0, 500));
+      
       const parsedData = parseOcrText(text);
+      
+      console.log('Parsed Batch Number:', parsedData.batch_number);
+      console.log('Parsed Pipeline:', parsedData.pipeline);
+      
+      // If confidence is low, warn the user
+      if (confidence < 70) {
+        console.warn('Low OCR confidence:', confidence, '- results may be inaccurate');
+      }
       
       setFormData({
         batch_number: parsedData.batch_number,
@@ -169,24 +201,98 @@ export default function ScanBatch() {
     const lines = text.split('\n').map(l => l.trim()).filter(l => l);
     
     let batchNumber = '';
-    for (let i = 0; i < Math.min(10, lines.length); i++) {
-      const line = lines[i].trim();
-      const lowerLine = line.toLowerCase();
-      if (lowerLine.includes('metal') && lowerLine.includes('concentrator')) {
-        const numbersOnLine = line.match(/\b(\d{3,4})\b/g);
-        if (numbersOnLine && numbersOnLine.length > 0) {
-          const lastNum = numbersOnLine[numbersOnLine.length - 1];
-          if (!lastNum.match(/^(19|20)\d{2}$/)) {
-            batchNumber = lastNum;
+    
+    // Strategy 1: Look for number next to "START TIME" (most reliable for this form)
+    const startTimeIndex = lines.findIndex(l => /start\s+time/i.test(l));
+    if (startTimeIndex !== -1) {
+      // Check the same line and next few lines for isolated numbers
+      for (let i = startTimeIndex; i < Math.min(startTimeIndex + 3, lines.length); i++) {
+        const line = lines[i];
+        // Look for isolated 3-4 digit numbers (likely in a box)
+        const isolatedNumbers = line.match(/\b(\d{3,4})\b/g);
+        if (isolatedNumbers) {
+          for (const num of isolatedNumbers) {
+            // Exclude years (19xx, 20xx) and dates
+            if (!num.match(/^(19|20)\d{2}$/) && num.length >= 3) {
+              batchNumber = num;
+              break;
+            }
+          }
+          if (batchNumber) break;
+        }
+        // Also check for numbers that appear after "START TIME" on the same line
+        const afterStartTime = line.split(/start\s+time/i)[1];
+        if (afterStartTime) {
+          const numMatch = afterStartTime.match(/\b(\d{3,4})\b/);
+          if (numMatch && !numMatch[1].match(/^(19|20)\d{2}$/)) {
+            batchNumber = numMatch[1];
             break;
           }
         }
       }
     }
     
+    // Strategy 2: Look for "PRODUCTION PLAN FORM" and extract nearby numbers
     if (!batchNumber) {
-      for (let i = 0; i < Math.min(5, lines.length); i++) {
+      const formIndex = lines.findIndex(l => /production\s+plan\s+form/i.test(l));
+      if (formIndex !== -1) {
+        // Check lines around the form title
+        for (let i = Math.max(0, formIndex - 2); i < Math.min(formIndex + 5, lines.length); i++) {
+          const line = lines[i];
+          // Look for isolated 3-4 digit numbers
+          const numbers = line.match(/\b(\d{3,4})\b/g);
+          if (numbers) {
+            for (const num of numbers) {
+              if (!num.match(/^(19|20)\d{2}$/) && num.length >= 3) {
+                // Prefer numbers that appear alone or in short contexts
+                const context = line.replace(/[^\d\s]/g, '').trim();
+                if (context.length <= 6 || line.match(new RegExp(`\\b${num}\\b`))) {
+                  batchNumber = num;
+                  break;
+                }
+              }
+            }
+            if (batchNumber) break;
+          }
+        }
+      }
+    }
+    
+    // Strategy 3: Look near "METAL CONCENTRATORS" header
+    if (!batchNumber) {
+      for (let i = 0; i < Math.min(10, lines.length); i++) {
         const line = lines[i].trim();
+        const lowerLine = line.toLowerCase();
+        if (lowerLine.includes('metal') && lowerLine.includes('concentrator')) {
+          const numbersOnLine = line.match(/\b(\d{3,4})\b/g);
+          if (numbersOnLine && numbersOnLine.length > 0) {
+            for (const num of numbersOnLine) {
+              if (!num.match(/^(19|20)\d{2}$/) && num.length >= 3) {
+                batchNumber = num;
+                break;
+              }
+            }
+            if (batchNumber) break;
+          }
+        }
+      }
+    }
+    
+    // Strategy 4: Look for isolated numbers in header area (first 8 lines)
+    if (!batchNumber) {
+      for (let i = 0; i < Math.min(8, lines.length); i++) {
+        const line = lines[i].trim();
+        // Skip lines that are clearly dates or times
+        if (line.match(/\d{4}[\/\-]\d{2}[\/\-]\d{2}/) || line.match(/\d{2}:\d{2}/)) {
+          continue;
+        }
+        // Look for isolated 3-4 digit numbers
+        const isolatedMatch = line.match(/^\s*(\d{3,4})\s*$/);
+        if (isolatedMatch && !isolatedMatch[1].match(/^(19|20)\d{2}$/)) {
+          batchNumber = isolatedMatch[1];
+          break;
+        }
+        // Look for numbers at end of line
         const endNumberMatch = line.match(/\s+(\d{3,4})\s*$/);
         if (endNumberMatch && !endNumberMatch[1].match(/^(19|20)\d{2}$/)) {
           batchNumber = endNumberMatch[1];
@@ -195,6 +301,7 @@ export default function ScanBatch() {
       }
     }
     
+    // Strategy 5: Fallback - use current timestamp
     if (!batchNumber) {
       batchNumber = Date.now().toString().slice(-4);
     }
