@@ -15,7 +15,6 @@ import {
   FileText, 
   Loader2, 
   CheckCircle,
-  ChevronRight,
   AlertCircle,
   Upload,
   X
@@ -416,11 +415,6 @@ export default function ScanBatch() {
     return false;
   };
 
-  const handleProceedToStep2 = () => {
-    if (canProceedToStep2()) {
-      setCurrentStep(2);
-    }
-  };
 
   // Validate form
   const validateForm = () => {
