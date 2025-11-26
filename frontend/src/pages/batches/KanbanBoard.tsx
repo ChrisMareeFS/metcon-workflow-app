@@ -252,24 +252,34 @@ export default function KanbanBoard() {
 
                       {/* Progress */}
                       {(() => {
-                        // Use batch's own flow if populated, otherwise use active flow
-                        const batchFlow = (batch.flow_id && typeof batch.flow_id === 'object' && (batch.flow_id as any).nodes) 
-                          ? (batch.flow_id as any) 
-                          : flow;
+                        // Use batch's own flow if populated with nodes, otherwise use active flow
+                        let batchFlow = flow;
+                        if (batch.flow_id && typeof batch.flow_id === 'object') {
+                          const flowObj = batch.flow_id as any;
+                          if (flowObj.nodes && Array.isArray(flowObj.nodes) && flowObj.nodes.length > 0) {
+                            batchFlow = flowObj;
+                          }
+                        }
+                        
                         const totalSteps = batchFlow?.nodes?.length || 0;
                         const completedSteps = batch.completed_node_ids?.length || 0;
+                        
+                        // For completed batches, show all steps completed
+                        const displayTotal = batch.status === 'completed' && totalSteps === 0 
+                          ? completedSteps 
+                          : totalSteps;
                         
                         return (
                           <>
                             <div className="text-xs text-gray-500 mb-2">
-                              {completedSteps} of {totalSteps} steps
+                              {completedSteps} of {displayTotal} steps
                             </div>
                             {/* Progress Bar */}
                             <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
                               <div
                                 className={`h-1.5 rounded-full ${getPipelineColor(batch.pipeline)}`}
                                 style={{
-                                  width: `${totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0}%`
+                                  width: `${displayTotal > 0 ? Math.min((completedSteps / displayTotal) * 100, 100) : 100}%`
                                 }}
                               />
                             </div>
