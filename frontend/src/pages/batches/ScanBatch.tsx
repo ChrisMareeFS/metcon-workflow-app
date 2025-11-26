@@ -431,16 +431,16 @@ export default function ScanBatch() {
     let weightColumnIndex = -1;
     
     // Find the header row with weight column
-    const headerIndex = lines.findIndex(l => {
+    const weightHeaderIndex = lines.findIndex(l => {
       const lower = l.toLowerCase();
       const hasWeight = weightColumnKeywords.some(keyword => lower.includes(keyword));
       const hasColumns = lower.includes('supplier') || lower.includes('no') || lower.includes('pc num');
       return hasWeight && hasColumns;
     });
     
-    if (headerIndex !== -1) {
+    if (weightHeaderIndex !== -1) {
       // Found header, determine which column is weight
-      const headerLine = lines[headerIndex].toLowerCase();
+      const headerLine = lines[weightHeaderIndex].toLowerCase();
       const headerParts = headerLine.split(/\s{2,}|\t/).filter(p => p.trim());
       
       // Find weight column index
@@ -454,7 +454,7 @@ export default function ScanBatch() {
       
       // Now find the summary row (usually at the bottom of the table)
       const summaryIndex = lines.findIndex((l, idx) => {
-        if (idx <= headerIndex) return false;
+        if (idx <= weightHeaderIndex) return false;
         const lower = l.toLowerCase();
         return lower.includes('summary') || 
                lower.includes('total') || 
