@@ -442,12 +442,16 @@ export default function StepRunner() {
             station={batch?.current_node?.name || batch?.current_node_id || ''}
             onComplete={async (data) => {
               // Handle mass check completion with OCR data
+              // Don't include photo File object - it has circular references
+              // Photo upload is handled separately if needed
               const stepData = {
                 expected_mass: checkTemplate.expected_mass,
                 measured_mass: data.measured_mass,
                 within_tolerance: data.within_tolerance,
                 ocr_confidence: data.ocr_confidence,
-                photo: data.photo,
+                // Only include photo metadata, not the File object itself
+                photo_uploaded: !!data.photo,
+                photo_name: data.photo?.name,
               };
               
               await handleCompleteStep(stepData);
