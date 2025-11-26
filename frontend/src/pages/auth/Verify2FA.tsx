@@ -156,9 +156,7 @@ export default function Verify2FA() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="h-12 w-12 rounded-full bg-primary-600 flex items-center justify-center">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
+            <img src="/metcon-logo.svg" alt="MetCon Logo" className="h-12" />
           </div>
           <CardTitle className="text-2xl font-bold">METCON FLOWS - 2FA</CardTitle>
           <CardDescription>
