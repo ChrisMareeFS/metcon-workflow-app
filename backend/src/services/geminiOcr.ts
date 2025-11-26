@@ -16,7 +16,8 @@ interface OcrResult {
  */
 export async function processImageWithGemini(imageBase64: string): Promise<OcrResult> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+    // Try gemini-pro-vision for vision tasks, fallback to gemini-1.5-pro if needed
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro-vision' });
 
     // Remove data URL prefix if present
     const base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
