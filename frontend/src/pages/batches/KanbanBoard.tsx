@@ -45,35 +45,41 @@ export default function KanbanBoard() {
       checks.forEach(t => templateMap.set(t.template_id, t));
       setTemplates(templateMap);
 
-      // Load batches for this pipeline (in progress only)
-      const response = await batchService.getBatches({ 
-        pipeline,
-        status: 'in_progress' 
-      });
-      setBatches(response.batches);
+      // Load ALL batches for this pipeline (both in_progress and completed)
+      const [inProgressResponse, completedResponse] = await Promise.all([
+        batchService.getBatches({ 
+          pipeline,
+          status: 'in_progress' 
+        }),
+        batchService.getBatches({ 
+          pipeline,
+          status: 'completed',
+          limit: 20,
+        })
+      ]);
+      
+      const allBatches = [...inProgressResponse.batches, ...completedResponse.batches];
+      setBatches(inProgressResponse.batches);
 
-      // Create columns from flow nodes
+      // Create columns from flow nodes (only show columns for active flow steps)
       const columnData: ColumnData[] = activeFlow.nodes.map(node => {
         const template = templateMap.get(node.template_id);
         return {
           nodeId: node.id,
           nodeName: template?.name || node.template_id,
           nodeType: node.type,
-          batches: response.batches.filter(b => b.current_node_id === node.id),
+          batches: allBatches.filter(b => 
+            b.status === 'in_progress' && b.current_node_id === node.id
+          ),
         };
       });
 
-      // Add "Completed" column
-      const completedBatchesResponse = await batchService.getBatches({ 
-        pipeline,
-        status: 'completed',
-        limit: 10,
-      });
+      // Add "Completed" column at the end
       columnData.push({
         nodeId: 'completed',
         nodeName: '✅ Completed',
         nodeType: 'station',
-        batches: completedBatchesResponse.batches,
+        batches: completedResponse.batches,
       });
 
       setColumns(columnData);
