@@ -124,8 +124,7 @@ export default function ScanBatch() {
 
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
-        const isolatedNumbers = line.match(/\b(\d{3,4})\b/g);
-        if (isolatedNumbers) {
+    setSelectedMethod(method);
           for (const num of isolatedNumbers) {
             // Exclude years (19xx, 20xx) and dates
             if (!num.match(/^(19|20)\d{2}$/) && num.length >= 3) {
@@ -761,11 +760,7 @@ export default function ScanBatch() {
           supplier = mostCommon;
           console.log('Selected supplier:', supplier, 'with', maxCount, 'occurrences');
         }
-      }
-    }
-    
-  const handleMethodSelect = (method: StartMethod) => {
-    setSelectedMethod(method);
+  };
     // Clear sub-options when switching methods
     setSelectedCameraOption(null);
     setSelectedDeviceOption(null);
