@@ -232,8 +232,24 @@ router.post('/:id/complete-step', authorize('operator', 'admin'), async (req: Au
 
     const flow: any = batch.flow_id;
     
+    if (!flow) {
+      throw new AppError('Flow not found for this batch', 404);
+    }
+
+    if (!flow.nodes || !Array.isArray(flow.nodes)) {
+      throw new AppError('Flow nodes are invalid', 400);
+    }
+
+    if (!flow.edges || !Array.isArray(flow.edges)) {
+      throw new AppError('Flow edges are invalid', 400);
+    }
+    
     // Get current node to access template_id
     const currentNode = flow.nodes.find((n: any) => n.id === batch.current_node_id);
+    
+    if (!currentNode && batch.current_node_id) {
+      console.warn(`Current node ${batch.current_node_id} not found in flow nodes`);
+    }
     
     // Mark current node as completed
     if (batch.current_node_id && !batch.completed_node_ids.includes(batch.current_node_id)) {
@@ -251,14 +267,19 @@ router.post('/:id/complete-step', authorize('operator', 'admin'), async (req: Au
       data: stepData || {},
     });
 
-    // Update analytics fields based on step completion
-    if (currentNode && batch.current_node_id) {
-      await updateAnalyticsOnStepCompletion(
-        batch,
-        batch.current_node_id,
-        currentNode.template_id,
-        stepData || {}
-      );
+    // Update analytics fields based on step completion (wrap in try-catch to not block completion)
+    if (currentNode && batch.current_node_id && currentNode.template_id) {
+      try {
+        await updateAnalyticsOnStepCompletion(
+          batch,
+          batch.current_node_id,
+          currentNode.template_id,
+          stepData || {}
+        );
+      } catch (analyticsError: any) {
+        console.error('Error updating analytics on step completion:', analyticsError);
+        // Don't throw - allow step completion to proceed even if analytics fails
+      }
     }
 
     // Find next node
@@ -272,8 +293,13 @@ router.post('/:id/complete-step', authorize('operator', 'admin'), async (req: Au
       batch.status = 'completed';
       batch.completed_at = new Date();
       
-      // Finalize analytics calculations
-      finalizeAnalytics(batch);
+      // Finalize analytics calculations (wrap in try-catch)
+      try {
+        finalizeAnalytics(batch);
+      } catch (analyticsError: any) {
+        console.error('Error finalizing analytics:', analyticsError);
+        // Don't throw - allow batch completion to proceed
+      }
       
       batch.events.push({
         event_id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -301,7 +327,8 @@ router.post('/:id/complete-step', authorize('operator', 'admin'), async (req: Au
         next_node: nextNode,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error completing step:', error);
     next(error);
   }
 });
