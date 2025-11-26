@@ -123,7 +123,7 @@ export default function ScanBatch() {
   // Removed parseOcrText function - now using Gemini Vision API instead of Tesseract OCR
 
   // Handle method selection
-      for (let i = startTimeIndex; i < Math.min(startTimeIndex + 3, lines.length); i++) {
+  const handleMethodSelect = (method: StartMethod) => {
         const line = lines[i];
         // Look for isolated 3-4 digit numbers (likely in a box)
         const isolatedNumbers = line.match(/\b(\d{3,4})\b/g);
@@ -773,8 +773,6 @@ export default function ScanBatch() {
         supplier = supplierMatch[1].trim();
       }
     }
-    
-    console.log('Supplier Detection:', { supplier });
     
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
