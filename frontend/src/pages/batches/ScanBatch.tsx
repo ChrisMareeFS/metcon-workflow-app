@@ -125,7 +125,6 @@ export default function ScanBatch() {
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
     setSelectedMethod(method);
-      if (formIndex !== -1) {
         // Check lines around the form title
         for (let i = Math.max(0, formIndex - 2); i < Math.min(formIndex + 5, lines.length); i++) {
           const line = lines[i];
@@ -726,7 +725,6 @@ export default function ScanBatch() {
           // Find most common
           let maxCount = 0;
           let mostCommon = suppliers[0];
-          for (const [name, count] of Object.entries(supplierCounts)) {
     // Clear sub-options when switching methods
     setSelectedCameraOption(null);
     setSelectedDeviceOption(null);
