@@ -125,29 +125,6 @@ export default function ScanBatch() {
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
     setSelectedMethod(method);
-          const line = lines[i];
-          // Look for isolated 3-4 digit numbers
-          const numbers = line.match(/\b(\d{3,4})\b/g);
-          if (numbers) {
-            for (const num of numbers) {
-              if (!num.match(/^(19|20)\d{2}$/) && num.length >= 3) {
-                // Prefer numbers that appear alone or in short contexts
-                const context = line.replace(/[^\d\s]/g, '').trim();
-                if (context.length <= 6 || line.match(new RegExp(`\\b${num}\\b`))) {
-                  batchNumber = num;
-                  break;
-                }
-              }
-            }
-            if (batchNumber) break;
-          }
-        }
-      }
-    }
-    
-    // Strategy 2b: Look for pattern like "ProductionPlan - 9017" or "Plan - 9017"
-    if (!batchNumber) {
-      const planMatch = text.match(/(?:production\s*plan|plan)\s*[-–]\s*(\d{3,4})/i);
       if (planMatch && planMatch[1] && !planMatch[1].match(/^(19|20)\d{2}$/)) {
         batchNumber = planMatch[1];
       }
@@ -716,10 +693,6 @@ export default function ScanBatch() {
         if (suppliers.length > 0) {
           // Count occurrences
           const supplierCounts: Record<string, number> = {};
-          suppliers.forEach(s => {
-            supplierCounts[s] = (supplierCounts[s] || 0) + 1;
-          });
-          
     // Clear sub-options when switching methods
     setSelectedCameraOption(null);
     setSelectedDeviceOption(null);
