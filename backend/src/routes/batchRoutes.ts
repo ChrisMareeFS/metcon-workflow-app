@@ -249,6 +249,7 @@ router.post('/:id/complete-step', authorize('operator', 'admin'), async (req: Au
     
     if (!currentNode && batch.current_node_id) {
       console.warn(`Current node ${batch.current_node_id} not found in flow nodes`);
+      throw new AppError(`Current step (${batch.current_node_id}) not found in flow`, 400);
     }
     
     // Mark current node as completed
@@ -286,10 +287,30 @@ router.post('/:id/complete-step', authorize('operator', 'admin'), async (req: Au
     const outgoingEdge = flow.edges.find((e: any) => e.source === batch.current_node_id);
     
     if (outgoingEdge) {
+      // Verify the target node exists
+      const targetNode = flow.nodes.find((n: any) => n.id === outgoingEdge.target);
+      if (!targetNode) {
+        console.error(`Target node ${outgoingEdge.target} from edge not found in flow nodes`);
+        throw new AppError(`Next step not found in flow`, 400);
+      }
+      
       // Move to next node
       batch.current_node_id = outgoingEdge.target;
     } else {
-      // No next node - batch is complete
+      // Check if all nodes are completed before marking as complete
+      const allNodesCompleted = flow.nodes.every((node: any) => 
+        batch.completed_node_ids.includes(node.id)
+      );
+      
+      if (!allNodesCompleted) {
+        const remainingNodes = flow.nodes.filter((node: any) => 
+          !batch.completed_node_ids.includes(node.id)
+        );
+        console.error(`No outgoing edge found, but ${remainingNodes.length} nodes remain incomplete:`, remainingNodes.map((n: any) => n.id));
+        throw new AppError(`Flow structure error: No connection to next step. Please check flow configuration.`, 400);
+      }
+      
+      // All nodes completed - batch is complete
       batch.status = 'completed';
       batch.completed_at = new Date();
       
@@ -329,6 +350,7 @@ router.post('/:id/complete-step', authorize('operator', 'admin'), async (req: Au
     });
   } catch (error: any) {
     console.error('Error completing step:', error);
+    console.error('Error stack:', error.stack);
     next(error);
   }
 });
