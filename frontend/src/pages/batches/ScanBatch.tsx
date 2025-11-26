@@ -5,7 +5,7 @@ import { batchService } from '../../services/batchService';
 import Button from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
-import { Camera, FileText, Loader2, Upload, X, CheckCircle } from 'lucide-react';
+import { Camera, Loader2, Upload, X, CheckCircle } from 'lucide-react';
 import ScanningMethods, { ScanningMethod } from '../../components/batches/ScanningMethods';
 
 export default function ScanBatch() {

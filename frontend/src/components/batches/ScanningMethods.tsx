@@ -56,7 +56,7 @@ export default function ScanningMethods({
           onQRCodeScanned?.(decodedText);
           stopQRScanner();
         },
-        (errorMessage) => {
+        () => {
           // Ignore scanning errors (they're frequent during scanning)
         }
       );
