@@ -311,16 +311,117 @@ export default function ScanBatch() {
       batchNumber = Date.now().toString().slice(-4);
     }
     
+    // Determine metal type by analyzing actual percentage values in the table columns
     let pipeline: 'copper' | 'silver' | 'gold' = 'copper';
-    const silverCount = (text.match(/silver\s*%/gi) || []).length;
-    const goldCount = (text.match(/gold\s*%/gi) || []).length;
-    if (silverCount > goldCount && silverCount > 0) {
-      pipeline = 'silver';
-    } else if (goldCount > silverCount && goldCount > 0) {
+    
+    const silverPercentages: number[] = [];
+    const goldPercentages: number[] = [];
+    
+    // Find the table header row with % SILVER and % GOLD columns
+    const headerIndex = lines.findIndex(l => {
+      const lower = l.toLowerCase();
+      return (lower.includes('% silver') || lower.includes('silver %') || lower.includes('silver')) && 
+             (lower.includes('% gold') || lower.includes('gold %') || lower.includes('gold'));
+    });
+    
+    if (headerIndex !== -1) {
+      // Found the header, now parse data rows below it
+      // Look for rows that have numeric data (not empty, not summary)
+      for (let i = headerIndex + 1; i < Math.min(headerIndex + 25, lines.length); i++) {
+        const line = lines[i].trim();
+        
+        // Stop at summary or empty sections
+        if (!line || 
+            line.toLowerCase().includes('summary') || 
+            line.toLowerCase().includes('out production') ||
+            line.toLowerCase().includes('no destination')) {
+          break;
+        }
+        
+        // Look for lines with multiple numbers (likely a data row)
+        // Extract all percentage values from the line
+        const percentPattern = /(\d+\.?\d*)\s*%/g;
+        const percentMatches = [...line.matchAll(percentPattern)];
+        
+        if (percentMatches.length >= 2) {
+          // We found multiple percentages - likely % SILVER and % GOLD
+          // In the table structure, % SILVER typically comes before % GOLD
+          // Extract both percentages
+          const firstPercent = parseFloat(percentMatches[0]?.[1] || '0');
+          const secondPercent = parseFloat(percentMatches[1]?.[1] || '0');
+          
+          // Validate they're reasonable percentages (0-100)
+          if (!isNaN(firstPercent) && firstPercent >= 0 && firstPercent <= 100) {
+            silverPercentages.push(firstPercent);
+          }
+          if (!isNaN(secondPercent) && secondPercent >= 0 && secondPercent <= 100) {
+            goldPercentages.push(secondPercent);
+          }
+        } else if (percentMatches.length === 1) {
+          // Single percentage - might be in a column, but we need context
+          // Skip for now as we can't determine which column it's in
+        }
+      }
+    }
+    
+    // If we didn't find percentages in structured rows, try a simpler approach:
+    // Look for any lines with percentage values and check which metal is mentioned
+    if (silverPercentages.length === 0 && goldPercentages.length === 0) {
+      for (const line of lines) {
+        const lowerLine = line.toLowerCase();
+        const percentMatches = line.match(/(\d+\.?\d*)\s*%/g);
+        
+        if (percentMatches) {
+          const percent = parseFloat(percentMatches[0]?.replace('%', '') || '0');
+          if (!isNaN(percent) && percent > 0 && percent <= 100) {
+            if (lowerLine.includes('silver') && !lowerLine.includes('gold')) {
+              silverPercentages.push(percent);
+            } else if (lowerLine.includes('gold') && !lowerLine.includes('silver')) {
+              goldPercentages.push(percent);
+            }
+          }
+        }
+      }
+    }
+    
+    // Calculate average percentages to determine dominant metal
+    const avgSilver = silverPercentages.length > 0
+      ? silverPercentages.reduce((a, b) => a + b, 0) / silverPercentages.length
+      : 0;
+    const avgGold = goldPercentages.length > 0
+      ? goldPercentages.reduce((a, b) => a + b, 0) / goldPercentages.length
+      : 0;
+    
+    // Determine pipeline: whichever metal has significantly higher percentage
+    // Threshold: if one metal has >5% average and the other is <1%, choose the higher one
+    if (avgGold > 5 && avgSilver < 1) {
       pipeline = 'gold';
+    } else if (avgSilver > 5 && avgGold < 1) {
+      pipeline = 'silver';
+    } else if (avgGold > avgSilver && avgGold > 1) {
+      pipeline = 'gold';
+    } else if (avgSilver > avgGold && avgSilver > 1) {
+      pipeline = 'silver';
     } else if (lowerText.includes('copper') || lowerText.includes('cu ')) {
       pipeline = 'copper';
+    } else {
+      // Fallback: check if any individual percentages are significant
+      const maxGold = goldPercentages.length > 0 ? Math.max(...goldPercentages) : 0;
+      const maxSilver = silverPercentages.length > 0 ? Math.max(...silverPercentages) : 0;
+      
+      if (maxGold > maxSilver && maxGold > 1) {
+        pipeline = 'gold';
+      } else if (maxSilver > maxGold && maxSilver > 1) {
+        pipeline = 'silver';
+      }
     }
+    
+    console.log('Metal Detection:', { 
+      avgSilver: avgSilver.toFixed(2), 
+      avgGold: avgGold.toFixed(2), 
+      sampleCounts: { silver: silverPercentages.length, gold: goldPercentages.length },
+      pipeline 
+    });
     
     let initialWeight = '';
     const summaryIndex = lines.findIndex(l => /summary/i.test(l));
