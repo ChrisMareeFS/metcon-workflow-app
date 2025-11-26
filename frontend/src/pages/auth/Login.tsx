@@ -25,10 +25,17 @@ export default function Login() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
+
+  const fillCredentials = (username: string, password: string) => {
+    setValue('username', username);
+    setValue('password', password);
+    setError(null); // Clear any previous errors
+  };
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
@@ -129,22 +136,66 @@ export default function Login() {
                   Test Credentials
                 </h3>
               <div className="space-y-3 text-xs">
-                <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
-                  <span className="font-medium text-gray-700">Admin</span>
-                  <span className="font-mono text-gray-600">admin / admin123</span>
+                <div className="flex justify-between items-center gap-3 py-2 px-3 bg-white rounded-lg">
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-700">Admin</span>
+                    <span className="font-mono text-gray-600 ml-2">admin / admin123</span>
                   </div>
-                <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
-                  <span className="font-medium text-gray-700">Supervisor</span>
-                  <span className="font-mono text-gray-600">supervisor1 / Password123!</span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => fillCredentials('admin', 'admin123')}
+                    className="text-xs px-3 py-1.5 btn-touch"
+                  >
+                    Fill
+                  </Button>
+                </div>
+                <div className="flex justify-between items-center gap-3 py-2 px-3 bg-white rounded-lg">
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-700">Supervisor</span>
+                    <span className="font-mono text-gray-600 ml-2">supervisor1 / Password123!</span>
                   </div>
-                <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
-                  <span className="font-medium text-gray-700">Operator</span>
-                  <span className="font-mono text-gray-600">operator1 / Password123!</span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => fillCredentials('supervisor1', 'Password123!')}
+                    className="text-xs px-3 py-1.5 btn-touch"
+                  >
+                    Fill
+                  </Button>
+                </div>
+                <div className="flex justify-between items-center gap-3 py-2 px-3 bg-white rounded-lg">
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-700">Operator</span>
+                    <span className="font-mono text-gray-600 ml-2">operator1 / Password123!</span>
                   </div>
-                <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
-                  <span className="font-medium text-gray-700">Analyst</span>
-                  <span className="font-mono text-gray-600">analyst1 / Password123!</span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => fillCredentials('operator1', 'Password123!')}
+                    className="text-xs px-3 py-1.5 btn-touch"
+                  >
+                    Fill
+                  </Button>
+                </div>
+                <div className="flex justify-between items-center gap-3 py-2 px-3 bg-white rounded-lg">
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-700">Analyst</span>
+                    <span className="font-mono text-gray-600 ml-2">analyst1 / Password123!</span>
                   </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => fillCredentials('analyst1', 'Password123!')}
+                    className="text-xs px-3 py-1.5 btn-touch"
+                  >
+                    Fill
+                  </Button>
+                </div>
                 </div>
               </div>
             </div>
