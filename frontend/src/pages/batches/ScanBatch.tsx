@@ -172,12 +172,17 @@ export default function ScanBatch() {
       
       // Log OCR results for debugging
       console.log('OCR Confidence:', confidence);
-      console.log('OCR Raw Text (first 500 chars):', text.substring(0, 500));
+      console.log('OCR Raw Text (first 1000 chars):', text.substring(0, 1000));
+      console.log('OCR Full Text Lines:', text.split('\n').slice(0, 30));
       
       const parsedData = parseOcrText(text);
       
-      console.log('Parsed Batch Number:', parsedData.batch_number);
-      console.log('Parsed Pipeline:', parsedData.pipeline);
+      console.log('Parsed Data:', {
+        batch_number: parsedData.batch_number,
+        pipeline: parsedData.pipeline,
+        initial_weight: parsedData.initial_weight,
+        supplier: parsedData.supplier,
+      });
       
       // If confidence is low, warn the user
       if (confidence < 70) {
@@ -430,12 +435,22 @@ export default function ScanBatch() {
     const weightColumnKeywords = ['p. weight', 'f weight', 'weight', 'p weight', 'pure weight', 'fine weight'];
     let weightColumnIndex = -1;
     
-    // Find the header row with weight column
+    // Find the header row with weight column - be more flexible with matching
     const weightHeaderIndex = lines.findIndex(l => {
       const lower = l.toLowerCase();
       const hasWeight = weightColumnKeywords.some(keyword => lower.includes(keyword));
-      const hasColumns = lower.includes('supplier') || lower.includes('no') || lower.includes('pc num');
-      return hasWeight && hasColumns;
+      const hasTableStructure = lower.includes('supplier') || 
+                                lower.includes('no') || 
+                                lower.includes('pc num') ||
+                                lower.includes('drill') ||
+                                lower.includes('silver') ||
+                                lower.includes('gold');
+      return hasWeight && hasTableStructure;
+    });
+    
+    console.log('Weight Header Search:', { 
+      weightHeaderIndex, 
+      headerLine: weightHeaderIndex !== -1 ? lines[weightHeaderIndex] : 'not found' 
     });
     
     if (weightHeaderIndex !== -1) {
@@ -458,30 +473,55 @@ export default function ScanBatch() {
         const lower = l.toLowerCase();
         return lower.includes('summary') || 
                lower.includes('total') || 
-               (lower.includes('carolt') || lower.includes('carat')); // Common summary row identifier
+               (lower.includes('carolt') || lower.includes('carat')) || // Common summary row identifier
+               (lower.match(/^\s*\d+\s+/) && lower.match(/[\d,]+\.?\d*\s*$/)); // Row with number at start and large number at end
+      });
+      
+      console.log('Summary Row Search:', { 
+        summaryIndex, 
+        summaryLine: summaryIndex !== -1 ? lines[summaryIndex] : 'not found' 
       });
       
       if (summaryIndex !== -1) {
         const summaryLine = lines[summaryIndex];
-        // Try to split by multiple spaces or tabs (table format)
-        const summaryParts = summaryLine.split(/\s{2,}|\t/).filter(p => p.trim());
+        console.log('Processing summary line:', summaryLine);
+        
+        // Try multiple splitting strategies
+        // Strategy 1: Split by multiple spaces (2+)
+        let summaryParts = summaryLine.split(/\s{2,}/).filter(p => p.trim());
+        
+        // Strategy 2: If that doesn't work well, try splitting by tabs
+        if (summaryParts.length < 3) {
+          summaryParts = summaryLine.split(/\t/).filter(p => p.trim());
+        }
+        
+        // Strategy 3: Try splitting by single space but keep only meaningful parts
+        if (summaryParts.length < 3) {
+          summaryParts = summaryLine.split(/\s+/).filter(p => p.trim() && p.length > 1);
+        }
+        
+        console.log('Summary parts:', summaryParts);
         
         // If we found the weight column index, use it
         if (weightColumnIndex >= 0 && summaryParts.length > weightColumnIndex) {
           const weightValue = summaryParts[weightColumnIndex].trim();
+          console.log('Weight value from column:', weightValue);
           // Extract number from the value (remove any non-numeric characters except comma and period)
           const weightMatch = weightValue.match(/[\d,]+\.?\d*/);
           if (weightMatch) {
             const weightNum = parseFloat(weightMatch[0].replace(/,/g, ''));
             if (!isNaN(weightNum) && weightNum >= 10 && weightNum <= 1000000) {
               initialWeight = weightMatch[0].replace(/,/g, '');
+              console.log('Extracted weight from column:', initialWeight);
             }
           }
-        } else {
-          // Fallback: look for large numbers in the summary row (likely weight totals)
-          // Weight is usually one of the larger numbers in the summary
+        }
+        
+        // Fallback: look for large numbers in the summary row (likely weight totals)
+        if (!initialWeight) {
           const numbersInSummary = summaryLine.match(/[\d,]+\.?\d*/g);
           if (numbersInSummary) {
+            console.log('Numbers found in summary:', numbersInSummary);
             // Find the largest reasonable number (likely total weight)
             let maxWeight = 0;
             for (const numStr of numbersInSummary) {
@@ -491,6 +531,7 @@ export default function ScanBatch() {
                 initialWeight = numStr.replace(/,/g, '');
               }
             }
+            console.log('Extracted weight from numbers:', initialWeight);
           }
         }
       }
@@ -545,16 +586,32 @@ export default function ScanBatch() {
     let supplier = '';
     
     // Strategy 1: Find supplier from table column
-    // Find the header row with SUPPLIER column
+    // Find the header row with SUPPLIER column - be more flexible
     const supplierHeaderIndex = lines.findIndex(l => {
       const lower = l.toLowerCase();
       return lower.includes('supplier') && 
-             (lower.includes('no') || lower.includes('pc num') || lower.includes('drill'));
+             (lower.includes('no') || lower.includes('pc num') || lower.includes('drill') ||
+              lower.includes('weight') || lower.includes('silver') || lower.includes('gold'));
+    });
+    
+    console.log('Supplier Header Search:', { 
+      supplierHeaderIndex, 
+      headerLine: supplierHeaderIndex !== -1 ? lines[supplierHeaderIndex] : 'not found' 
     });
     
     if (supplierHeaderIndex !== -1) {
       const headerLine = lines[supplierHeaderIndex];
-      const headerParts = headerLine.split(/\s{2,}|\t/).filter(p => p.trim());
+      
+      // Try multiple splitting strategies
+      let headerParts = headerLine.split(/\s{2,}/).filter(p => p.trim());
+      if (headerParts.length < 3) {
+        headerParts = headerLine.split(/\t/).filter(p => p.trim());
+      }
+      if (headerParts.length < 3) {
+        headerParts = headerLine.split(/\s+/).filter(p => p.trim() && p.length > 1);
+      }
+      
+      console.log('Header parts:', headerParts);
       
       // Find supplier column index
       let supplierColumnIndex = -1;
@@ -570,6 +627,7 @@ export default function ScanBatch() {
       if (supplierColumnIndex === -1 && headerParts.length >= 3) {
         // Count from right: rightmost is index length-1, third from right is length-3
         supplierColumnIndex = headerParts.length - 3;
+        console.log('Using third from right:', supplierColumnIndex, 'out of', headerParts.length);
       }
       
       if (supplierColumnIndex >= 0) {
@@ -590,8 +648,14 @@ export default function ScanBatch() {
           // Skip lines that are clearly not data rows (e.g., just numbers or dates)
           if (line.match(/^\d+[\/\-]\d+[\/\-]\d+/)) continue;
           
-          // Split by multiple spaces or tabs (table format)
-          const parts = line.split(/\s{2,}|\t/).filter(p => p.trim());
+          // Try multiple splitting strategies
+          let parts = line.split(/\s{2,}/).filter(p => p.trim());
+          if (parts.length < 3) {
+            parts = line.split(/\t/).filter(p => p.trim());
+          }
+          if (parts.length < 3) {
+            parts = line.split(/\s+/).filter(p => p.trim() && p.length > 1);
+          }
           
           if (parts.length > supplierColumnIndex) {
             const supplierValue = parts[supplierColumnIndex].trim();
@@ -602,9 +666,12 @@ export default function ScanBatch() {
                 supplierValue.length > 2 &&
                 !supplierValue.match(/^\d+\.?\d*%?$/)) {
               suppliers.push(supplierValue);
+              console.log('Found supplier:', supplierValue, 'from line:', line);
             }
           }
         }
+        
+        console.log('All suppliers found:', suppliers);
         
         // Use the most common supplier, or first one found
         if (suppliers.length > 0) {
@@ -625,6 +692,7 @@ export default function ScanBatch() {
           }
           
           supplier = mostCommon;
+          console.log('Selected supplier:', supplier, 'with', maxCount, 'occurrences');
         }
       }
     }
