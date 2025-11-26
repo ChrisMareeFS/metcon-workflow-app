@@ -41,10 +41,9 @@ export default function ScanBatch() {
   const [isCreating, setIsCreating] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scannedImage, setScannedImage] = useState<string | null>(null);
-  const [extractedData, setExtractedData] = useState<any>(null);
   const [formData, setFormData] = useState({
     batch_number: '',
-    pipeline: '' as '' | 'copper' | 'silver' | 'gold',
+    pipeline: '' as 'copper' | 'silver' | 'gold' | '',
     initial_weight: '',
     priority: 'normal' as 'normal' | 'high',
     supplier: '',
@@ -127,7 +126,6 @@ export default function ScanBatch() {
       
       const { data: { text } } = await worker.recognize(processedImage);
       const parsedData = parseOcrText(text);
-      setExtractedData(parsedData);
       
       setFormData({
         batch_number: parsedData.batch_number,
