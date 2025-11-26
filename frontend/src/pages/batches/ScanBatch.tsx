@@ -33,6 +33,9 @@ export default function ScanBatch() {
   // Step tracking
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   
+  // Modal state
+  const [showPhotoUploadModal, setShowPhotoUploadModal] = useState(false);
+  
   // Step 1: Start method selection
   const [selectedMethod, setSelectedMethod] = useState<StartMethod | null>(null);
   const [selectedCameraOption, setSelectedCameraOption] = useState<CameraOption | null>(null);
@@ -80,6 +83,9 @@ export default function ScanBatch() {
     reader.onload = async (event) => {
       const imageData = event.target?.result as string;
       setScannedImage(imageData);
+      
+      // Close modal if open
+      setShowPhotoUploadModal(false);
       
       // Automatically proceed to Step 2 after file is selected
       setCurrentStep(2);
@@ -372,18 +378,33 @@ export default function ScanBatch() {
   ) => {
     if (method === 'camera') {
       setSelectedCameraOption(option as CameraOption);
-      // If paper scan, trigger file input
+      // If paper scan, show modal for photo/upload options
       if (option === 'paper') {
-        fileInputRef.current?.click();
+        setShowPhotoUploadModal(true);
+      } else {
+        // For QR and barcode, proceed to step 2
+        setCurrentStep(2);
       }
     } else if (method === 'devices') {
       setSelectedDeviceOption(option as DeviceOption);
+      // Proceed to step 2 for device options
+      setCurrentStep(2);
     } else if (method === 'manual') {
       setSelectedManualOption(option as ManualOption);
       if (option === 'type') {
         // Move to step 2 for manual entry
         setCurrentStep(2);
+      } else if (option === 'voice') {
+        // For voice, proceed to step 2
+        setCurrentStep(2);
       }
+    }
+  };
+  
+  const handlePhotoUploadChoice = (choice: 'photo' | 'upload') => {
+    setShowPhotoUploadModal(false);
+    if (choice === 'photo' || choice === 'upload') {
+      fileInputRef.current?.click();
     }
   };
 
@@ -492,11 +513,53 @@ export default function ScanBatch() {
           )}
         </div>
 
+        {/* Stepper */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center gap-4">
+            {/* Step 1 */}
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold ${
+                currentStep >= 1
+                  ? 'bg-primary-500 border-primary-500 text-white'
+                  : 'bg-white border-gray-300 text-gray-400'
+              }`}>
+                {currentStep > 1 ? <CheckCircle className="h-6 w-6" /> : '1'}
+              </div>
+              <span className={`text-sm font-medium ${
+                currentStep >= 1 ? 'text-primary-600' : 'text-gray-400'
+              }`}>
+                Choose Method
+              </span>
+            </div>
+            
+            {/* Connector */}
+            <div className={`h-0.5 w-16 sm:w-24 ${
+              currentStep >= 2 ? 'bg-primary-500' : 'bg-gray-300'
+            }`} />
+            
+            {/* Step 2 */}
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold ${
+                currentStep >= 2
+                  ? 'bg-primary-500 border-primary-500 text-white'
+                  : 'bg-white border-gray-300 text-gray-400'
+              }`}>
+                2
+              </div>
+              <span className={`text-sm font-medium ${
+                currentStep >= 2 ? 'text-primary-600' : 'text-gray-400'
+              }`}>
+                Enter Details
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* STEP 1: Choose How to Start */}
         {currentStep === 1 && (
           <div className="space-y-6">
-            {/* Three Main Option Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            {/* Three Main Option Cards - Vertical Stack */}
+            <div className="space-y-4 sm:space-y-6">
               {/* Option 1: Camera Scan */}
               <Card 
                 className={`cursor-pointer transition-all ${
@@ -553,34 +616,6 @@ export default function ScanBatch() {
                           </div>
                         </div>
                       </button>
-                      
-                      {/* Upload/Photo buttons when paper is selected */}
-                      {selectedCameraOption === 'paper' && (
-                        <div className="mt-3 space-y-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              fileInputRef.current?.click();
-                            }}
-                            className="w-full p-3 rounded-lg border-2 border-primary-500 bg-primary-50 hover:bg-primary-100 transition-all flex items-center justify-center gap-2"
-                          >
-                            <Camera className="h-5 w-5 text-primary-600" />
-                            <span className="font-semibold text-primary-900">Take Photo</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              fileInputRef.current?.click();
-                            }}
-                            className="w-full p-3 rounded-lg border-2 border-gray-300 bg-white hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
-                          >
-                            <Upload className="h-5 w-5 text-gray-600" />
-                            <span className="font-semibold text-gray-900">Upload File</span>
-                          </button>
-                        </div>
-                      )}
                       
                       <button
                         type="button"
@@ -773,8 +808,8 @@ export default function ScanBatch() {
               </Card>
             </div>
 
-            {/* Selected Summary */}
-            {canProceedToStep2() && (
+            {/* Selected Summary - shown when option is selected but waiting for action */}
+            {canProceedToStep2() && currentStep === 1 && (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
@@ -783,19 +818,6 @@ export default function ScanBatch() {
                   </p>
                 </div>
               </div>
-            )}
-
-            {/* Proceed Button */}
-            {canProceedToStep2() && (
-              <Button
-                type="button"
-                variant="primary"
-                onClick={handleProceedToStep2}
-                className="w-full sm:w-auto sm:min-w-[200px] text-base sm:text-lg py-3 sm:py-4"
-              >
-                Continue
-                <ChevronRight className="h-5 w-5 ml-2" />
-              </Button>
             )}
 
             {/* Hidden file input for paper scanning and uploads */}
@@ -807,6 +829,56 @@ export default function ScanBatch() {
               onChange={handleFileSelect}
               className="hidden"
             />
+          </div>
+        )}
+
+        {/* Photo/Upload Modal */}
+        {showPhotoUploadModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Scan Job Paper
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowPhotoUploadModal(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <p className="text-gray-600 mb-6">
+                  Choose how you want to add your job paper:
+                </p>
+                
+                <button
+                  type="button"
+                  onClick={() => handlePhotoUploadChoice('photo')}
+                  className="w-full p-6 rounded-lg border-2 border-primary-500 bg-primary-50 hover:bg-primary-100 transition-all flex items-center justify-center gap-3"
+                >
+                  <Camera className="h-6 w-6 text-primary-600" />
+                  <span className="font-semibold text-lg text-primary-900">Take Photo</span>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => handlePhotoUploadChoice('upload')}
+                  className="w-full p-6 rounded-lg border-2 border-gray-300 bg-white hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
+                >
+                  <Upload className="h-6 w-6 text-gray-600" />
+                  <span className="font-semibold text-lg text-gray-900">Upload File</span>
+                </button>
+                
+                <p className="text-xs text-gray-500 text-center mt-4">
+                  Supported formats: JPG, PNG, PDF
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
