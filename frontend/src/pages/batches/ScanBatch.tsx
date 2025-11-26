@@ -242,9 +242,9 @@ export default function ScanBatch() {
       }
     }
     
-    // Strategy 2: Look for "PRODUCTION PLAN FORM" and extract nearby numbers
+    // Strategy 2: Look for "PRODUCTION PLAN" (with or without "FORM") and extract nearby numbers
     if (!batchNumber) {
-      const formIndex = lines.findIndex(l => /production\s+plan\s+form/i.test(l));
+      const formIndex = lines.findIndex(l => /production\s+plan/i.test(l));
       if (formIndex !== -1) {
         // Check lines around the form title
         for (let i = Math.max(0, formIndex - 2); i < Math.min(formIndex + 5, lines.length); i++) {
@@ -265,6 +265,14 @@ export default function ScanBatch() {
             if (batchNumber) break;
           }
         }
+      }
+    }
+    
+    // Strategy 2b: Look for pattern like "ProductionPlan - 9017" or "Plan - 9017"
+    if (!batchNumber) {
+      const planMatch = text.match(/(?:production\s*plan|plan)\s*[-–]\s*(\d{3,4})/i);
+      if (planMatch && planMatch[1] && !planMatch[1].match(/^(19|20)\d{2}$/)) {
+        batchNumber = planMatch[1];
       }
     }
     
@@ -323,10 +331,13 @@ export default function ScanBatch() {
     const goldPercentages: number[] = [];
     
     // Find the table header row with % SILVER and % GOLD columns
+    // Be more flexible - look for either silver OR gold, not necessarily both (OCR might miss one)
     const headerIndex = lines.findIndex(l => {
       const lower = l.toLowerCase();
-      return (lower.includes('% silver') || lower.includes('silver %') || lower.includes('silver')) && 
-             (lower.includes('% gold') || lower.includes('gold %') || lower.includes('gold'));
+      const hasSilver = lower.includes('% silver') || lower.includes('silver %') || lower.includes('silver');
+      const hasGold = lower.includes('% gold') || lower.includes('gold %') || lower.includes('gold');
+      // Accept if either is present, or if both are present
+      return hasSilver || hasGold;
     });
     
     if (headerIndex !== -1) {
@@ -377,12 +388,40 @@ export default function ScanBatch() {
         const percentMatches = line.match(/(\d+\.?\d*)\s*%/g);
         
         if (percentMatches) {
-          const percent = parseFloat(percentMatches[0]?.replace('%', '') || '0');
-          if (!isNaN(percent) && percent > 0 && percent <= 100) {
-            if (lowerLine.includes('silver') && !lowerLine.includes('gold')) {
-              silverPercentages.push(percent);
-            } else if (lowerLine.includes('gold') && !lowerLine.includes('silver')) {
+          for (const match of percentMatches) {
+            const percent = parseFloat(match.replace('%', '').trim() || '0');
+            if (!isNaN(percent) && percent > 0 && percent <= 100) {
+              // Check for metal keywords (be flexible with OCR errors)
+              const hasSilver = lowerLine.includes('silver') || lowerLine.includes('silv');
+              const hasGold = lowerLine.includes('gold') || lowerLine.includes('god') || lowerLine.includes('goid');
+              
+              if (hasSilver && !hasGold) {
+                silverPercentages.push(percent);
+              } else if (hasGold && !hasSilver) {
+                goldPercentages.push(percent);
+              } else if (hasGold) {
+                // If both or unclear, prefer gold if gold keyword present
+                goldPercentages.push(percent);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Additional fallback: Look for high percentages (likely gold) in any line
+    if (goldPercentages.length === 0 && silverPercentages.length === 0) {
+      for (const line of lines) {
+        const percentMatches = line.match(/(\d{2,3}\.\d+)\s*%/g);
+        if (percentMatches) {
+          for (const match of percentMatches) {
+            const percent = parseFloat(match.replace('%', '').trim());
+            // High percentages (90%+) are likely gold
+            if (!isNaN(percent) && percent >= 90 && percent <= 100) {
               goldPercentages.push(percent);
+            } else if (!isNaN(percent) && percent > 0 && percent < 10) {
+              // Low percentages might be silver
+              silverPercentages.push(percent);
             }
           }
         }
@@ -635,18 +674,43 @@ export default function ScanBatch() {
     // Strategy 3: Look for weight patterns in the text
     if (!initialWeight) {
       const weightPatterns = [
-        /(?:total|sum|weight)[:\s]+([\d,]+\.?\d*)/i,
+        /(?:total|sum|weight|p\.?\s*weight|f\.?\s*weight)[:\s]+([\d,]+\.?\d*)/i,
         /([\d,]+\.?\d*)\s*(?:kg|g|weight)/i,
+        // Look for large numbers near "summary" or "carat"
+        /(?:summary|carat|carolt)[^\d]*([\d,]{4,}\.?\d*)/i,
       ];
       
       for (const pattern of weightPatterns) {
         const match = text.match(pattern);
         if (match) {
           const num = parseFloat(match[1].replace(/,/g, ''));
-          if (!isNaN(num) && num >= 10 && num <= 1000000) {
+          if (!isNaN(num) && num >= 1000 && num <= 1000000) {
             initialWeight = match[1].replace(/,/g, '');
+            console.log('Extracted weight from pattern:', initialWeight, 'pattern:', pattern);
             break;
           }
+        }
+      }
+    }
+    
+    // Strategy 4: Last resort - find the largest number in the entire text that looks like a weight
+    if (!initialWeight) {
+      const allNumbers = text.match(/[\d,]{4,}\.?\d*/g);
+      if (allNumbers) {
+        let maxWeight = 0;
+        let bestWeight = '';
+        for (const numStr of allNumbers) {
+          const cleaned = numStr.replace(/,/g, '');
+          const num = parseFloat(cleaned);
+          // Look for numbers in typical weight range (10k-500k)
+          if (!isNaN(num) && num >= 10000 && num <= 500000 && num > maxWeight) {
+            maxWeight = num;
+            bestWeight = cleaned;
+          }
+        }
+        if (bestWeight) {
+          initialWeight = bestWeight;
+          console.log('Extracted weight from largest number in text:', initialWeight);
         }
       }
     }
@@ -657,12 +721,20 @@ export default function ScanBatch() {
     let supplier = '';
     
     // Strategy 1: Find supplier from table column
-    // Find the header row with SUPPLIER column - be more flexible
+    // Find the header row with SUPPLIER column - be more flexible with OCR errors
     const supplierHeaderIndex = lines.findIndex(l => {
       const lower = l.toLowerCase();
-      return lower.includes('supplier') && 
-             (lower.includes('no') || lower.includes('pc num') || lower.includes('drill') ||
-              lower.includes('weight') || lower.includes('silver') || lower.includes('gold'));
+      // Look for supplier keyword (handle OCR errors like "supplier", "supplir", etc.)
+      const hasSupplier = lower.includes('supplier') || lower.includes('supplir') || lower.includes('suppli');
+      const hasTableStructure = lower.includes('no') || 
+                               lower.includes('pc num') || 
+                               lower.includes('pcnum') ||
+                               lower.includes('drill') ||
+                               lower.includes('weight') || 
+                               lower.includes('silver') || 
+                               lower.includes('gold') ||
+                               lower.includes('refinery'); // Common in supplier names
+      return hasSupplier && hasTableStructure;
     });
     
     console.log('Supplier Header Search:', { 
@@ -729,15 +801,34 @@ export default function ScanBatch() {
           }
           
           if (parts.length > supplierColumnIndex) {
-            const supplierValue = parts[supplierColumnIndex].trim();
+            let supplierValue = parts[supplierColumnIndex].trim();
+            
+            // Clean up common OCR errors
+            // Remove trailing numbers that might be from next column
+            supplierValue = supplierValue.replace(/\s+\d+\.?\d*\s*$/, '');
+            // Remove percentage signs
+            supplierValue = supplierValue.replace(/%/g, '');
             
             // Validate it looks like a supplier name (has letters, not just numbers)
             if (supplierValue && 
                 supplierValue.match(/[A-Za-z]/) && 
-                supplierValue.length > 2 &&
+                supplierValue.length > 5 && // Longer names are more likely to be suppliers
                 !supplierValue.match(/^\d+\.?\d*%?$/)) {
               suppliers.push(supplierValue);
               console.log('Found supplier:', supplierValue, 'from line:', line);
+            }
+          }
+          
+          // Also try to extract supplier from lines that mention "Refinery" or "Limited"
+          // even if column parsing fails
+          if (line.match(/refinery|limited/i) && !supplier) {
+            const supplierMatch = line.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Gold|Silver|Metal)?\s*(?:Refinery|Limited).*?)(?:\s+\d|$)/i);
+            if (supplierMatch) {
+              const extracted = supplierMatch[1].trim();
+              if (extracted.length > 10) {
+                suppliers.push(extracted);
+                console.log('Found supplier from pattern match:', extracted);
+              }
             }
           }
         }
