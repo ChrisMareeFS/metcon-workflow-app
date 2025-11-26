@@ -190,9 +190,6 @@ export default function Navigation({ onSidebarToggle }: NavigationProps) {
               <div className="flex-1 flex items-center gap-3">
                 <img src="/metcon-logo.svg" alt="MetCon Logo" className="h-8" />
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">
-                    MetCon Flows
-                  </h1>
                   <p className="text-xs text-gray-500 mt-1">
                     Precious Metals
                   </p>

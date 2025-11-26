@@ -77,7 +77,6 @@ export default function Login() {
           <div className="inline-flex items-center justify-center mb-6">
             <img src="/metcon-logo.svg" alt="MetCon Logo" className="h-12" />
           </div>
-          <h1 className="text-3xl font-semibold text-gray-900">MetCon Flows</h1>
           <p className="text-gray-600 mt-2">Precious Metals Processing</p>
         </div>
 
@@ -202,7 +201,7 @@ export default function Login() {
 
             <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-center text-gray-500">
-                © {new Date().getFullYear()} MetCon. All rights reserved.
+                © {new Date().getFullYear()} All rights reserved.
               </p>
             </div>
         </div>

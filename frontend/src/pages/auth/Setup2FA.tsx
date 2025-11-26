@@ -112,7 +112,7 @@ export default function Setup2FA() {
               <Settings className="h-6 w-6 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">METCON FLOWS - Setup 2FA</CardTitle>
+          <CardTitle className="text-2xl font-bold">Setup 2FA</CardTitle>
           <CardDescription>
             {step === 'select' && 'Choose your preferred verification method'}
             {step === 'configure' && 'Configure your 2FA method'}

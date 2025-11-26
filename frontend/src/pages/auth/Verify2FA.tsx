@@ -158,7 +158,7 @@ export default function Verify2FA() {
           <div className="flex justify-center mb-4">
             <img src="/metcon-logo.svg" alt="MetCon Logo" className="h-12" />
           </div>
-          <CardTitle className="text-2xl font-bold">METCON FLOWS - 2FA</CardTitle>
+          <CardTitle className="text-2xl font-bold">2FA Verification</CardTitle>
           <CardDescription>
             A 6-digit code has been sent to your registered device
           </CardDescription>
