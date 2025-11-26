@@ -541,11 +541,103 @@ export default function ScanBatch() {
     
     console.log('Weight Detection:', { initialWeight, weightColumnIndex });
     
+    // Extract supplier from table column (third from the right)
     let supplier = '';
-    const supplierMatch = text.match(/supplier[:\s]+([A-Za-z0-9\s&.-]+?)(?:\s{2,}|\d|$)/i);
-    if (supplierMatch) {
-      supplier = supplierMatch[1].trim();
+    
+    // Strategy 1: Find supplier from table column
+    // Find the header row with SUPPLIER column
+    const supplierHeaderIndex = lines.findIndex(l => {
+      const lower = l.toLowerCase();
+      return lower.includes('supplier') && 
+             (lower.includes('no') || lower.includes('pc num') || lower.includes('drill'));
+    });
+    
+    if (supplierHeaderIndex !== -1) {
+      const headerLine = lines[supplierHeaderIndex];
+      const headerParts = headerLine.split(/\s{2,}|\t/).filter(p => p.trim());
+      
+      // Find supplier column index
+      let supplierColumnIndex = -1;
+      for (let i = 0; i < headerParts.length; i++) {
+        const part = headerParts[i].toLowerCase();
+        if (part.includes('supplier')) {
+          supplierColumnIndex = i;
+          break;
+        }
+      }
+      
+      // If supplier column not found by name, try "third from the right"
+      if (supplierColumnIndex === -1 && headerParts.length >= 3) {
+        // Count from right: rightmost is index length-1, third from right is length-3
+        supplierColumnIndex = headerParts.length - 3;
+      }
+      
+      if (supplierColumnIndex >= 0) {
+        // Extract supplier from data rows
+        const suppliers: string[] = [];
+        
+        for (let i = supplierHeaderIndex + 1; i < Math.min(supplierHeaderIndex + 25, lines.length); i++) {
+          const line = lines[i].trim();
+          
+          // Stop at summary or empty sections
+          if (!line || 
+              line.toLowerCase().includes('summary') || 
+              line.toLowerCase().includes('out production') ||
+              line.toLowerCase().includes('no destination')) {
+            break;
+          }
+          
+          // Skip lines that are clearly not data rows (e.g., just numbers or dates)
+          if (line.match(/^\d+[\/\-]\d+[\/\-]\d+/)) continue;
+          
+          // Split by multiple spaces or tabs (table format)
+          const parts = line.split(/\s{2,}|\t/).filter(p => p.trim());
+          
+          if (parts.length > supplierColumnIndex) {
+            const supplierValue = parts[supplierColumnIndex].trim();
+            
+            // Validate it looks like a supplier name (has letters, not just numbers)
+            if (supplierValue && 
+                supplierValue.match(/[A-Za-z]/) && 
+                supplierValue.length > 2 &&
+                !supplierValue.match(/^\d+\.?\d*%?$/)) {
+              suppliers.push(supplierValue);
+            }
+          }
+        }
+        
+        // Use the most common supplier, or first one found
+        if (suppliers.length > 0) {
+          // Count occurrences
+          const supplierCounts: Record<string, number> = {};
+          suppliers.forEach(s => {
+            supplierCounts[s] = (supplierCounts[s] || 0) + 1;
+          });
+          
+          // Find most common
+          let maxCount = 0;
+          let mostCommon = suppliers[0];
+          for (const [name, count] of Object.entries(supplierCounts)) {
+            if (count > maxCount) {
+              maxCount = count;
+              mostCommon = name;
+            }
+          }
+          
+          supplier = mostCommon;
+        }
+      }
     }
+    
+    // Strategy 2: Fallback - simple pattern match
+    if (!supplier) {
+      const supplierMatch = text.match(/supplier[:\s]+([A-Za-z0-9\s&().-]+?)(?:\s{2,}|\d|$|%|silver|gold)/i);
+      if (supplierMatch) {
+        supplier = supplierMatch[1].trim();
+      }
+    }
+    
+    console.log('Supplier Detection:', { supplier });
     
     let carat = '';
     const caratMatch = text.match(/carat[:\s]+(\d+(?:\.\d+)?)/i);
