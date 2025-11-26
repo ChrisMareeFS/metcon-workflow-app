@@ -286,16 +286,26 @@ router.post('/:id/complete-step', authorize('operator', 'admin'), async (req: Au
     // Find next node
     const outgoingEdge = flow.edges.find((e: any) => e.source === batch.current_node_id);
     
+    console.log('Step completion debug:', {
+      current_node_id: batch.current_node_id,
+      completed_nodes: batch.completed_node_ids,
+      total_nodes: flow.nodes.length,
+      total_edges: flow.edges.length,
+      outgoing_edge: outgoingEdge,
+      all_edges: flow.edges.map((e: any) => ({ source: e.source, target: e.target })),
+    });
+    
     if (outgoingEdge) {
       // Verify the target node exists
       const targetNode = flow.nodes.find((n: any) => n.id === outgoingEdge.target);
       if (!targetNode) {
         console.error(`Target node ${outgoingEdge.target} from edge not found in flow nodes`);
-        throw new AppError(`Next step not found in flow`, 400);
+        throw new AppError(`Next step "${outgoingEdge.target}" not found in flow. Please check flow configuration.`, 400);
       }
       
       // Move to next node
       batch.current_node_id = outgoingEdge.target;
+      console.log(`Moving to next node: ${outgoingEdge.target}`);
     } else {
       // Check if all nodes are completed before marking as complete
       const allNodesCompleted = flow.nodes.every((node: any) => 
@@ -306,8 +316,8 @@ router.post('/:id/complete-step', authorize('operator', 'admin'), async (req: Au
         const remainingNodes = flow.nodes.filter((node: any) => 
           !batch.completed_node_ids.includes(node.id)
         );
-        console.error(`No outgoing edge found, but ${remainingNodes.length} nodes remain incomplete:`, remainingNodes.map((n: any) => n.id));
-        throw new AppError(`Flow structure error: No connection to next step. Please check flow configuration.`, 400);
+        console.error(`No outgoing edge found from node "${batch.current_node_id}", but ${remainingNodes.length} nodes remain incomplete:`, remainingNodes.map((n: any) => n.id));
+        throw new AppError(`Flow structure error: No connection from current step "${batch.current_node_id}" to next step. ${remainingNodes.length} step(s) remain incomplete. Please check flow configuration and ensure all steps are connected.`, 400);
       }
       
       // All nodes completed - batch is complete

@@ -225,8 +225,18 @@ export default function StepRunner() {
       }
     } catch (error: any) {
       console.error('Failed to complete step:', error);
-      const message = error.response?.data?.error || 'Failed to complete step';
-      alert(message);
+      console.error('Error response:', error.response);
+      console.error('Error data:', error.response?.data);
+      
+      // Extract error message from various possible locations
+      const message = 
+        error.response?.data?.error || 
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to complete step';
+      
+      // Show detailed error in alert
+      alert(`Error: ${message}\n\nPlease check the browser console (F12) for more details.`);
     } finally {
       setIsCompleting(false);
     }
