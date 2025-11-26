@@ -428,6 +428,7 @@ export default function StepRunner() {
             template={checkTemplate}
             batchNumber={batch?.batch_number || ''}
             station={batch?.current_node?.name || batch?.current_node_id || ''}
+            initialWeight={batch?.initial_weight}
             onComplete={async (data) => {
               // Handle mass check completion with OCR data
               // Don't include photo File object - it has circular references

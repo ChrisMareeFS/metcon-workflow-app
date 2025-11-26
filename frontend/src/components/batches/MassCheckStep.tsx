@@ -10,11 +10,12 @@ interface MassCheckStepProps {
   template: CheckTemplate;
   batchNumber: string;
   station: string;
+  initialWeight?: number; // Weight from the scanned production plan form
   onComplete: (data: { measured_mass: number; within_tolerance: boolean; photo?: File; ocr_confidence?: number }) => void;
   onFlagException: (data: { exception_type: string; reason: string; notes?: string }) => void;
 }
 
-export default function MassCheckStep({ template, batchNumber, station, onComplete, onFlagException }: MassCheckStepProps) {
+export default function MassCheckStep({ template, batchNumber, station, initialWeight, onComplete, onFlagException }: MassCheckStepProps) {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -24,7 +25,8 @@ export default function MassCheckStep({ template, batchNumber, station, onComple
   const [showExceptionForm, setShowExceptionForm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const expectedMass = template.expected_mass || 0;
+  // Use initial_weight from batch (scanned form) if available, otherwise fall back to template's expected_mass
+  const expectedMass = initialWeight || template.expected_mass || 0;
   const tolerance = template.tolerance || 0.5;
   const toleranceUnit = template.tolerance_unit || 'g';
 
