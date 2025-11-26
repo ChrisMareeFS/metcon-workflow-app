@@ -64,7 +64,7 @@ export default function KanbanBoard() {
       });
 
       // Add "Completed" column
-      const completedBatches = await batchService.getBatches({ 
+      const completedBatchesResponse = await batchService.getBatches({ 
         pipeline,
         status: 'completed',
         limit: 10,
@@ -73,7 +73,7 @@ export default function KanbanBoard() {
         nodeId: 'completed',
         nodeName: '✅ Completed',
         nodeType: 'station',
-        batches: completedBatches.batches,
+        batches: completedBatchesResponse.batches,
       });
 
       setColumns(columnData);
@@ -128,10 +128,10 @@ export default function KanbanBoard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-full mx-auto flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 px-4 py-4 flex-shrink-0 shadow-sm">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               {getPipelineEmoji(pipeline)} {pipeline.toUpperCase()} Pipeline Board
@@ -182,8 +182,8 @@ export default function KanbanBoard() {
       </div>
 
       {/* Kanban Board */}
-      <div className="overflow-x-auto">
-        <div className="inline-flex gap-4 p-6 min-w-full">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="inline-flex gap-4 p-6 min-w-full h-full">
           {columns.map((column) => (
             <div
               key={column.nodeId}
@@ -202,7 +202,7 @@ export default function KanbanBoard() {
               </div>
 
               {/* Column Content */}
-              <div className="bg-gray-50 rounded-b-lg p-3 min-h-[calc(100vh-250px)] space-y-3">
+              <div className="bg-gray-50 rounded-b-lg p-3 h-[calc(100vh-180px)] overflow-y-auto space-y-3">
                 {column.batches.length > 0 ? (
                   column.batches.map((batch) => (
                     <Card
