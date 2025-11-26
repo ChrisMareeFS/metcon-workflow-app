@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createWorker, PSM } from 'tesseract.js';
 import { batchService } from '../../services/batchService';
+import { ocrService } from '../../services/ocrService';
 import Button from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
@@ -95,118 +95,33 @@ export default function ScanBatch() {
     reader.readAsDataURL(file);
   };
 
-  const preprocessImage = (imageData: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
-          return;
-        }
-        
-        // Scale up for better OCR accuracy (3x for small text)
-        const scale = 3;
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        
-        // Use high-quality image rendering
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        // Enhanced preprocessing: grayscale, contrast enhancement, adaptive thresholding
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          
-          // Convert to grayscale with better weights
-          let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-          
-          // Enhance contrast (make dark text darker, light background lighter)
-          const contrast = 1.8;
-          gray = (gray - 128) * contrast + 128;
-          
-          // Adaptive thresholding - better for varying lighting
-          const threshold = 140;
-          const value = gray > threshold ? 255 : 0;
-          
-          data[i] = value;
-          data[i + 1] = value;
-          data[i + 2] = value;
-          // Keep alpha channel
-        }
-        
-        ctx.putImageData(imageData, 0, 0);
-        resolve(canvas.toDataURL('image/png', 1.0));
-      };
-      
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = imageData;
-    });
-  };
-
   const processImage = async (imageData: string) => {
     setIsScanning(true);
-    let worker;
     try {
-      const processedImage = await preprocessImage(imageData);
-      worker = await createWorker('eng', 1);
+      // Use Gemini Vision API instead of Tesseract OCR
+      const result = await ocrService.processImage(imageData);
       
-      await worker.setParameters({
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,%:-/()',
-        preserve_interword_spaces: '1',
-        tessedit_pageseg_mode: PSM.AUTO_OSD, // Auto orientation and script detection
-        tessedit_ocr_engine_mode: '1', // Neural nets LSTM engine only
-        classify_bln_numeric_mode: '1', // Better number recognition
-        textord_min_linesize: '2.5', // Better for small text
-      });
-      
-      const { data: { text, confidence } } = await worker.recognize(processedImage);
-      
-      // Log OCR results for debugging
-      console.log('OCR Confidence:', confidence);
-      console.log('OCR Raw Text (first 1000 chars):', text.substring(0, 1000));
-      console.log('OCR Full Text Lines:', text.split('\n').slice(0, 30));
-      
-      const parsedData = parseOcrText(text);
-      
-      console.log('Parsed Data:', {
-        batch_number: parsedData.batch_number,
-        pipeline: parsedData.pipeline,
-        initial_weight: parsedData.initial_weight,
-        supplier: parsedData.supplier,
-      });
-      
-      // If confidence is low, warn the user
-      if (confidence < 70) {
-        console.warn('Low OCR confidence:', confidence, '- results may be inaccurate');
-      }
+      console.log('Gemini OCR Result:', result);
       
       setFormData({
-        batch_number: parsedData.batch_number,
-        pipeline: parsedData.pipeline,
-        initial_weight: parsedData.initial_weight,
-        priority: parsedData.priority,
-        supplier: parsedData.supplier || '',
-        carat: parsedData.carat || '',
+        batch_number: result.batch_number,
+        pipeline: result.pipeline,
+        initial_weight: result.initial_weight,
+        priority: 'normal' as const,
+        supplier: result.supplier || '',
+        carat: result.carat || '',
       });
-    } catch (error) {
-      console.error('Failed to process image:', error);
-      alert('Could not read the image. Please try again or use manual entry.');
+    } catch (error: any) {
+      console.error('Failed to process image with Gemini:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Could not read the image. Please try again or use manual entry.';
+      alert(errorMessage);
     } finally {
-      if (worker) await worker.terminate();
       setIsScanning(false);
     }
   };
 
-  const parseOcrText = (text: string) => {
+  // Removed - now using Gemini Vision API instead of Tesseract OCR
+  // const parseOcrText = (text: string) => {
     const lowerText = text.toLowerCase();
     const lines = text.split('\n').map(l => l.trim()).filter(l => l);
     
@@ -883,7 +798,7 @@ export default function ScanBatch() {
       supplier,
       carat,
     };
-  };
+  }; */
 
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {

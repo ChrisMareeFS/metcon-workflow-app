@@ -1,0 +1,28 @@
+# Run these commands on your droplet after SSH'ing in:
+
+cd ~/metcon-workflow-app
+git pull origin main
+
+# Update .env file
+sed -i 's|VITE_API_URL=.*|VITE_API_URL=/api|' .env || echo "VITE_API_URL=/api" >> .env
+
+# Rebuild frontend
+docker compose -f docker-compose.prod.yml build frontend
+
+# Start services
+docker compose -f docker-compose.prod.yml up -d
+
+# Check status
+sleep 5
+docker compose -f docker-compose.prod.yml ps
+
+# Test endpoints
+echo "Testing frontend..."
+curl -s http://localhost:80 | head -n 1
+
+echo "Testing API..."
+curl -s http://localhost:80/api/health
+
+echo ""
+echo "✅ Deployment complete! App accessible at: http://142.93.224.115"
+

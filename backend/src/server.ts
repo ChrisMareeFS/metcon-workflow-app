@@ -13,6 +13,7 @@ import checkTemplateRoutes from './routes/checkTemplateRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import productionPlanRoutes from './routes/productionPlanRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import ocrRoutes from './routes/ocrRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -48,6 +49,7 @@ app.use('/api/check-templates', checkTemplateRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/production-plans', productionPlanRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/ocr', ocrRoutes);
 
 // 404 handler
 app.use((_req, res) => {

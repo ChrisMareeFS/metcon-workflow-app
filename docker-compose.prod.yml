@@ -11,6 +11,7 @@ services:
       - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     env_file:
       - .env
     restart: unless-stopped
