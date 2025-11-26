@@ -125,8 +125,6 @@ export default function ScanBatch() {
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
     setSelectedMethod(method);
-        // Check lines around the form title
-        for (let i = Math.max(0, formIndex - 2); i < Math.min(formIndex + 5, lines.length); i++) {
           const line = lines[i];
           // Look for isolated 3-4 digit numbers
           const numbers = line.match(/\b(\d{3,4})\b/g);
@@ -722,9 +720,6 @@ export default function ScanBatch() {
             supplierCounts[s] = (supplierCounts[s] || 0) + 1;
           });
           
-          // Find most common
-          let maxCount = 0;
-          let mostCommon = suppliers[0];
     // Clear sub-options when switching methods
     setSelectedCameraOption(null);
     setSelectedDeviceOption(null);
