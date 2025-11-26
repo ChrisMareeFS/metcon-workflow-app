@@ -502,36 +502,95 @@ export default function ScanBatch() {
         
         console.log('Summary parts:', summaryParts);
         
-        // If we found the weight column index, use it
+        // If we found the weight column index, use it (this is most reliable)
         if (weightColumnIndex >= 0 && summaryParts.length > weightColumnIndex) {
           const weightValue = summaryParts[weightColumnIndex].trim();
           console.log('Weight value from column:', weightValue);
-          // Extract number from the value (remove any non-numeric characters except comma and period)
-          const weightMatch = weightValue.match(/[\d,]+\.?\d*/);
-          if (weightMatch) {
-            const weightNum = parseFloat(weightMatch[0].replace(/,/g, ''));
-            if (!isNaN(weightNum) && weightNum >= 10 && weightNum <= 1000000) {
-              initialWeight = weightMatch[0].replace(/,/g, '');
-              console.log('Extracted weight from column:', initialWeight);
+          
+          // Extract number from the value - handle comma-separated numbers
+          // Try to find the largest number in this cell (in case OCR added extra digits)
+          const numbersInCell = weightValue.match(/[\d,]+\.?\d*/g);
+          
+          if (numbersInCell && numbersInCell.length > 0) {
+            // If multiple numbers found, take the largest one
+            let maxNum = 0;
+            let bestMatch = '';
+            
+            for (const numStr of numbersInCell) {
+              const cleaned = numStr.replace(/,/g, '');
+              const num = parseFloat(cleaned);
+              if (!isNaN(num) && num >= 1000 && num <= 1000000 && num > maxNum) {
+                maxNum = num;
+                bestMatch = cleaned;
+              }
+            }
+            
+            if (bestMatch) {
+              initialWeight = bestMatch;
+              console.log('Extracted weight from column (validated):', initialWeight);
+            }
+          } else {
+            // Fallback: simple extraction
+            const weightMatch = weightValue.match(/[\d,]+\.?\d*/);
+            if (weightMatch) {
+              const cleaned = weightMatch[0].replace(/,/g, '');
+              const weightNum = parseFloat(cleaned);
+              if (!isNaN(weightNum) && weightNum >= 1000 && weightNum <= 1000000) {
+                initialWeight = cleaned;
+                console.log('Extracted weight from column (simple):', initialWeight);
+              }
             }
           }
         }
         
         // Fallback: look for large numbers in the summary row (likely weight totals)
+        // Weight is typically the largest number in the summary row
         if (!initialWeight) {
+          // Extract all numbers with commas (formatted numbers)
           const numbersInSummary = summaryLine.match(/[\d,]+\.?\d*/g);
           if (numbersInSummary) {
             console.log('Numbers found in summary:', numbersInSummary);
-            // Find the largest reasonable number (likely total weight)
+            
+            // Parse and find the largest number (weight is usually the biggest)
             let maxWeight = 0;
+            let bestWeightStr = '';
+            
             for (const numStr of numbersInSummary) {
-              const num = parseFloat(numStr.replace(/,/g, ''));
-              if (!isNaN(num) && num >= 100 && num <= 1000000 && num > maxWeight) {
-                maxWeight = num;
-                initialWeight = numStr.replace(/,/g, '');
+              // Clean the number string (handle both comma and period as thousands separators)
+              const cleaned = numStr.replace(/,/g, '').replace(/\./g, '');
+              const num = parseFloat(cleaned);
+              
+              // Weight is typically a large number (1000+ and reasonable max)
+              // Also prefer numbers that are in the typical weight range (10k-500k for precious metals)
+              if (!isNaN(num) && num >= 1000 && num <= 1000000) {
+                // Prefer numbers in the typical weight range
+                const isInTypicalRange = num >= 10000 && num <= 500000;
+                
+                if (num > maxWeight || (isInTypicalRange && num >= maxWeight * 0.8)) {
+                  maxWeight = num;
+                  // Keep original format but remove commas
+                  bestWeightStr = numStr.replace(/,/g, '');
+                }
               }
             }
-            console.log('Extracted weight from numbers:', initialWeight);
+            
+            if (bestWeightStr) {
+              initialWeight = bestWeightStr;
+              console.log('Extracted weight from numbers (largest):', initialWeight);
+            }
+          }
+        }
+        
+        // Additional strategy: Look for numbers near "P. WEIGHT" or "F WEIGHT" in summary
+        if (!initialWeight) {
+          const weightContextMatch = summaryLine.match(/(?:p\.?\s*weight|f\.?\s*weight|weight)[:\s]*([\d,]+\.?\d*)/i);
+          if (weightContextMatch) {
+            const weightStr = weightContextMatch[1].replace(/,/g, '');
+            const weightNum = parseFloat(weightStr);
+            if (!isNaN(weightNum) && weightNum >= 1000 && weightNum <= 1000000) {
+              initialWeight = weightStr;
+              console.log('Extracted weight from context match:', initialWeight);
+            }
           }
         }
       }
@@ -542,21 +601,33 @@ export default function ScanBatch() {
       const summaryIndex = lines.findIndex(l => /summary/i.test(l));
       if (summaryIndex !== -1) {
         // Look in summary row and a few rows after
+        let maxWeight = 0;
+        let bestWeightStr = '';
+        
         for (let i = summaryIndex; i < Math.min(summaryIndex + 5, lines.length); i++) {
           const line = lines[i];
           // Look for numbers with commas (formatted large numbers)
           const largeNumbers = line.match(/[\d,]+\.?\d*/g);
           if (largeNumbers) {
             for (const numStr of largeNumbers) {
-              const num = parseFloat(numStr.replace(/,/g, ''));
-              // Weight is typically a large number (100+ and reasonable max)
-              if (!isNaN(num) && num >= 100 && num <= 1000000) {
-                initialWeight = numStr.replace(/,/g, '');
-                break;
+              const cleaned = numStr.replace(/,/g, '');
+              const num = parseFloat(cleaned);
+              // Weight is typically a large number (1000+ and reasonable max)
+              // Prefer numbers in typical weight range
+              if (!isNaN(num) && num >= 1000 && num <= 1000000) {
+                const isInTypicalRange = num >= 10000 && num <= 500000;
+                if (num > maxWeight || (isInTypicalRange && num >= maxWeight * 0.8)) {
+                  maxWeight = num;
+                  bestWeightStr = cleaned;
+                }
               }
             }
-            if (initialWeight) break;
           }
+        }
+        
+        if (bestWeightStr) {
+          initialWeight = bestWeightStr;
+          console.log('Extracted weight from summary section (largest):', initialWeight);
         }
       }
     }
