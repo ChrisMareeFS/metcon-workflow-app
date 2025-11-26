@@ -123,7 +123,6 @@ export default function ScanBatch() {
   // Removed parseOcrText function - now using Gemini Vision API instead of Tesseract OCR
 
   // Handle method selection
-      // Check the same line and next few lines for isolated numbers
       for (let i = startTimeIndex; i < Math.min(startTimeIndex + 3, lines.length); i++) {
         const line = lines[i];
         // Look for isolated 3-4 digit numbers (likely in a box)
@@ -776,12 +775,6 @@ export default function ScanBatch() {
     }
     
     console.log('Supplier Detection:', { supplier });
-    
-    let carat = '';
-    const caratMatch = text.match(/carat[:\s]+(\d+(?:\.\d+)?)/i);
-    if (caratMatch) {
-      carat = caratMatch[1];
-    }
     
   // Handle method selection
   const handleMethodSelect = (method: StartMethod) => {
