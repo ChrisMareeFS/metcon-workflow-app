@@ -4,7 +4,7 @@ import { authService } from '../../services/authService';
 import { useAuthStore } from '../../stores/authStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { Shield, AlertCircle, Clock } from 'lucide-react';
+import { AlertCircle, Clock } from 'lucide-react';
 
 const CODE_LENGTH = 6;
 

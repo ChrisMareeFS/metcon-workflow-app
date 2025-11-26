@@ -7,7 +7,7 @@ import { useAuthStore } from '../../stores/authStore';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { authService } from '../../services/authService';
-import { Lock, User, AlertCircle, Shield } from 'lucide-react';
+import { Lock, User, AlertCircle } from 'lucide-react';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -74,8 +74,8 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo/Header Section */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-500 rounded-2xl mb-6">
-            <Shield className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center mb-6">
+            <img src="/metcon-logo.svg" alt="MetCon Logo" className="h-12" />
           </div>
           <h1 className="text-3xl font-semibold text-gray-900">MetCon Flows</h1>
           <p className="text-gray-600 mt-2">Precious Metals Processing</p>
