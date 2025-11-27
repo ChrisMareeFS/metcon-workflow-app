@@ -91,5 +91,13 @@ export const flowService = {
     const response = await api.patch(`/flows/${id}/activate`);
     return response.data.data;
   },
+
+  /**
+   * Delete a flow
+   */
+  async deleteFlow(id: string): Promise<void> {
+    const response = await api.delete(`/flows/${id}`);
+    return response.data;
+  },
 };
 

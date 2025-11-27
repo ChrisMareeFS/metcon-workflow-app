@@ -4,7 +4,7 @@ import { flowService, Flow } from '../../services/flowService';
 import { templateService, StationTemplate } from '../../services/templateService';
 import Button from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { Plus, Edit, CheckCircle, Archive, Clock, AlertCircle, ArrowRight, Settings } from 'lucide-react';
+import { Plus, Edit, CheckCircle, Archive, Clock, AlertCircle, ArrowRight, Settings, Trash2, X } from 'lucide-react';
 
 export default function FlowsList() {
   const navigate = useNavigate();
@@ -13,6 +13,8 @@ export default function FlowsList() {
   const [isLoading, setIsLoading] = useState(true);
   const [showStationPopup, setShowStationPopup] = useState(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'archived'>('all');
+  const [flowToDelete, setFlowToDelete] = useState<Flow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -77,6 +79,27 @@ export default function FlowsList() {
         return 'bg-yellow-50 text-yellow-700 border-yellow-200';
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
+
+  const handleDeleteClick = (flow: Flow, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFlowToDelete(flow);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!flowToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await flowService.deleteFlow(flowToDelete._id);
+      setFlowToDelete(null);
+      await loadData(); // Reload flows list
+    } catch (error: any) {
+      console.error('Failed to delete flow:', error);
+      alert(error.response?.data?.error || 'Failed to delete flow');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -235,7 +258,16 @@ export default function FlowsList() {
                         }}
                       >
                         <Edit className="h-3 w-3 mr-1" />
-                        Manage Stations
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={(e) => handleDeleteClick(flow, e)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Delete
                       </Button>
                     </div>
                   </div>
@@ -260,6 +292,59 @@ export default function FlowsList() {
 
       {/* Station Setup Popup */}
       {showStationPopup && <StationSetupPopup />}
+
+      {/* Delete Confirmation Modal */}
+      {flowToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0">
+                  <AlertCircle className="h-8 w-8 text-red-500" />
+                </div>
+                <div className="ml-3 flex-1">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Delete Flow
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setFlowToDelete(null)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-2">
+                  Are you sure you want to delete <strong>{flowToDelete.name}</strong> (v{flowToDelete.version})?
+                </p>
+                <p className="text-sm text-red-600 font-medium">
+                  This action cannot be undone. The flow will be permanently deleted.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setFlowToDelete(null)}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Flow'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

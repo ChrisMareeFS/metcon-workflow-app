@@ -202,5 +202,41 @@ router.patch('/:id/activate', authorize('admin'), async (req: AuthRequest, res, 
   }
 });
 
+/**
+ * DELETE /api/flows/:id
+ * Delete a flow (admin only)
+ */
+router.delete('/:id', authorize('admin'), async (req: AuthRequest, res, next) => {
+  try {
+    const flow = await Flow.findById(req.params.id);
+
+    if (!flow) {
+      throw new AppError('Flow not found', 404);
+    }
+
+    // Check if flow is active and has batches using it
+    if (flow.status === 'active') {
+      const { Batch } = await import('../models/Batch.js');
+      const batchesUsingFlow = await Batch.countDocuments({ flow_id: flow._id });
+      
+      if (batchesUsingFlow > 0) {
+        throw new AppError(
+          `Cannot delete active flow. ${batchesUsingFlow} batch(es) are currently using this flow. Please archive it instead.`,
+          400
+        );
+      }
+    }
+
+    await Flow.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Flow deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
 
