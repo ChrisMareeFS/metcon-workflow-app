@@ -32,14 +32,18 @@ router.get('/', async (req: AuthRequest, res, next) => {
     if (status) filter.status = status;
     if (pipeline) filter.pipeline = pipeline;
 
+    // Force fresh query - no cache
     const batches = await Batch.find(filter)
       .sort({ created_at: -1 })
       .limit(Number(limit))
       .skip(Number(offset))
       .populate('flow_id') // Populate full flow including nodes and edges
-      .populate('events.user_id', 'username role');
+      .populate('events.user_id', 'username role')
+      .lean(); // Use lean() to get plain JavaScript objects, bypassing Mongoose caching
 
     const total = await Batch.countDocuments(filter);
+
+    console.log(`[GET /api/batches] Found ${batches.length} batches (total: ${total}) with filter:`, filter);
 
     res.json({
       success: true,
