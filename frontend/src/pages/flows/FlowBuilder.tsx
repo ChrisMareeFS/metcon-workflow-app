@@ -105,64 +105,101 @@ export default function FlowBuilder() {
 
   // Convert flow to nodes when both flow and templates are available
   useEffect(() => {
-    if (flow && flow._id !== 'new' && flow.nodes && flow.nodes.length > 0 && 
-        stationTemplates.length > 0 && checkTemplates.length > 0) {
-      console.log('Converting flow to nodes:', { 
-        flowNodes: flow.nodes.length, 
-        stations: stationTemplates.length, 
-        checks: checkTemplates.length 
-      });
-      
-      const newNodes: Node[] = [];
-      const newEdges: Edge[] = [];
+    // Only convert if we have a saved flow (not 'new') with nodes
+    if (!flow || flow._id === 'new') {
+      return;
+    }
 
-      // Convert flow nodes to ReactFlow nodes
-      flow.nodes.forEach((node) => {
-        const template = 
-          node.type === 'station'
-            ? stationTemplates.find(t => t.template_id === node.template_id)
-            : checkTemplates.find(t => t.template_id === node.template_id);
+    // Wait for templates to be loaded
+    if (stationTemplates.length === 0 && checkTemplates.length === 0) {
+      console.log('Waiting for templates to load...');
+      return;
+    }
 
-        if (template) {
-          newNodes.push({
-            id: node.id,
-            type: 'template',
-            position: node.position,
-            data: {
-              type: node.type,
-              template: template,
-              onSelect: () => {
-                const selectedNode = newNodes.find(n => n.id === node.id);
-                if (selectedNode) setSelectedNode(selectedNode);
-              },
-            },
-          });
-        } else {
-          console.warn('Template not found for node:', node.template_id, 'type:', node.type);
-        }
-      });
-
-      // Convert flow edges to ReactFlow edges
-      flow.edges.forEach((edge) => {
-        newEdges.push({
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          type: 'smoothstep',
-          animated: true,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-          },
-        });
-      });
-
-      console.log('Setting nodes and edges:', { nodes: newNodes.length, edges: newEdges.length });
-      setNodes(newNodes);
-      setEdges(newEdges);
-    } else if (flow && flow._id !== 'new' && flow.nodes && flow.nodes.length === 0) {
-      // Flow exists but has no nodes - clear the canvas
+    // If flow has no nodes, clear the canvas
+    if (!flow.nodes || flow.nodes.length === 0) {
+      console.log('Flow has no nodes, clearing canvas');
       setNodes([]);
       setEdges([]);
+      return;
+    }
+
+    console.log('Converting flow to nodes:', { 
+      flowId: flow._id,
+      flowName: flow.name,
+      flowNodes: flow.nodes.length, 
+      flowEdges: flow.edges.length,
+      stations: stationTemplates.length, 
+      checks: checkTemplates.length 
+    });
+    
+    const newNodes: Node[] = [];
+    const newEdges: Edge[] = [];
+    const missingTemplates: string[] = [];
+
+    // Convert flow nodes to ReactFlow nodes
+    flow.nodes.forEach((node) => {
+      console.log('Processing node:', { id: node.id, type: node.type, template_id: node.template_id });
+      
+      const template = 
+        node.type === 'station'
+          ? stationTemplates.find(t => t.template_id === node.template_id)
+          : checkTemplates.find(t => t.template_id === node.template_id);
+
+      if (template) {
+        console.log('Found template:', template.name);
+        newNodes.push({
+          id: node.id,
+          type: 'template',
+          position: node.position || { x: 0, y: 0 },
+          data: {
+            type: node.type,
+            template: template,
+            onSelect: () => {
+              const selectedNode = newNodes.find(n => n.id === node.id);
+              if (selectedNode) setSelectedNode(selectedNode);
+            },
+          },
+        });
+      } else {
+        console.error('Template not found for node:', { 
+          nodeId: node.id, 
+          nodeType: node.type, 
+          templateId: node.template_id,
+          availableStationIds: stationTemplates.map(t => t.template_id),
+          availableCheckIds: checkTemplates.map(t => t.template_id)
+        });
+        missingTemplates.push(node.template_id);
+      }
+    });
+
+    // Convert flow edges to ReactFlow edges
+    flow.edges.forEach((edge) => {
+      newEdges.push({
+        id: edge.id || `edge_${edge.source}_${edge.target}`,
+        source: edge.source,
+        target: edge.target,
+        type: 'smoothstep',
+        animated: true,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+        },
+      });
+    });
+
+    console.log('Conversion complete:', { 
+      nodesCreated: newNodes.length, 
+      edgesCreated: newEdges.length,
+      missingTemplates: missingTemplates.length,
+      missingTemplateIds: missingTemplates
+    });
+
+    if (newNodes.length > 0) {
+      setNodes(newNodes);
+      setEdges(newEdges);
+    } else if (missingTemplates.length > 0) {
+      console.error('No nodes created because templates are missing. Missing template IDs:', missingTemplates);
+      alert(`Warning: Could not load ${missingTemplates.length} node(s) because their templates are missing. Please check the browser console for details.`);
     }
   }, [flow, stationTemplates, checkTemplates, setNodes, setEdges]);
 
@@ -278,7 +315,9 @@ export default function FlowBuilder() {
           nodes: flowNodes,
           edges: flowEdges,
         });
-        setFlow(updated);
+        console.log('Flow updated, reloading:', updated);
+        // Reload the flow to ensure we have the latest data
+        await loadFlow(id);
         alert('Flow saved successfully!');
       }
     } catch (error: any) {
