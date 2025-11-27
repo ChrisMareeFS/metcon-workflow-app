@@ -214,6 +214,50 @@ router.post('/:id/start', authorize('operator', 'admin'), async (req: AuthReques
 });
 
 /**
+ * PATCH /api/batches/:id/priority
+ * Update batch priority (admin only)
+ */
+router.patch('/:id/priority', authorize('admin'), async (req: AuthRequest, res, next) => {
+  try {
+    const { priority } = req.body;
+    
+    if (!priority || !['normal', 'high'].includes(priority)) {
+      throw new AppError('Priority must be "normal" or "high"', 400);
+    }
+
+    const batch = await Batch.findById(req.params.id);
+    if (!batch) {
+      throw new AppError('Batch not found', 404);
+    }
+
+    batch.priority = priority;
+    
+    // Log priority change event
+    batch.events.push({
+      event_id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'priority_changed',
+      timestamp: new Date(),
+      user_id: req.user!.id,
+      station: batch.current_node_id,
+      step: batch.current_node_id,
+      data: { 
+        old_priority: batch.priority,
+        new_priority: priority,
+      },
+    });
+
+    await batch.save();
+
+    res.json({
+      success: true,
+      data: batch,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * POST /api/batches/:id/complete-step
  * Complete current step and move to next
  */

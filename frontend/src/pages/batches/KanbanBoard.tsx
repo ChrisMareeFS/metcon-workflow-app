@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { batchService, Batch } from '../../services/batchService';
+import { batchService, Batch, BatchEvent } from '../../services/batchService';
 import { flowService, Flow } from '../../services/flowService';
 import { templateService, StationTemplate, CheckTemplate } from '../../services/templateService';
+import { useAuthStore } from '../../stores/authStore';
 import Button from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Plus, RefreshCw, Flag, Clock, LayoutList } from 'lucide-react';
+import { Plus, RefreshCw, Flag, Clock, LayoutList, User, Star } from 'lucide-react';
 
 interface ColumnData {
   nodeId: string;
@@ -16,12 +17,14 @@ interface ColumnData {
 
 export default function KanbanBoard() {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuthStore();
   const [pipeline, setPipeline] = useState<'copper' | 'silver' | 'gold'>('copper');
   const [flow, setFlow] = useState<Flow | null>(null);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [columns, setColumns] = useState<ColumnData[]>([]);
   const [, setTemplates] = useState<Map<string, StationTemplate | CheckTemplate>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
+  const [updatingPriority, setUpdatingPriority] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -112,6 +115,43 @@ export default function KanbanBoard() {
       case 'silver': return '⚪';
       case 'gold': return '🟡';
       default: return '⚪';
+    }
+  };
+
+  // Get the user currently working on the batch (from last step_completed event)
+  const getCurrentUser = (batch: Batch): string | null => {
+    if (!batch.events || batch.events.length === 0) return null;
+    
+    // Find the most recent step_completed event
+    const stepEvents = batch.events
+      .filter((e: BatchEvent) => e.type === 'step_completed')
+      .sort((a: BatchEvent, b: BatchEvent) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+    
+    if (stepEvents.length > 0) {
+      const lastEvent = stepEvents[0];
+      if (lastEvent.user_id && typeof lastEvent.user_id === 'object') {
+        return lastEvent.user_id.username;
+      }
+    }
+    
+    // Fallback to created_by if available
+    return null;
+  };
+
+  const handlePriorityChange = async (batchId: string, newPriority: 'normal' | 'high') => {
+    if (!currentUser || currentUser.role !== 'admin') return;
+    
+    setUpdatingPriority(batchId);
+    try {
+      await batchService.updatePriority(batchId, newPriority);
+      await loadData(); // Reload to show updated priority
+    } catch (error: any) {
+      console.error('Failed to update priority:', error);
+      alert(error.response?.data?.error || 'Failed to update priority');
+    } finally {
+      setUpdatingPriority(null);
     }
   };
 
@@ -219,7 +259,7 @@ export default function KanbanBoard() {
                   column.batches.map((batch) => (
                     <Card
                       key={batch._id}
-                      className="p-4 hover:shadow-lg transition-shadow cursor-pointer bg-white border-l-4"
+                      className="p-4 hover:shadow-lg transition-shadow bg-white border-l-4"
                       style={{
                         borderLeftColor: 
                           batch.priority === 'high' ? '#ef4444' :
@@ -227,19 +267,30 @@ export default function KanbanBoard() {
                           batch.pipeline === 'silver' ? '#9ca3af' :
                           '#eab308'
                       }}
-                      onClick={() => {
-                        if (batch.status === 'completed') {
-                          navigate(`/batches/${batch._id}`);
-                        } else {
-                          navigate(`/batches/${batch._id}/execute`);
-                        }
-                      }}
                     >
-                      {/* Batch Number */}
+                      {/* Batch Number and Priority Toggle */}
                       <div className="font-bold text-gray-900 mb-2 flex items-center justify-between">
                         <span className="truncate">{batch.batch_number}</span>
-                        {batch.priority === 'high' && (
-                          <span className="text-red-500 text-xs">🔥</span>
+                        {currentUser?.role === 'admin' ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePriorityChange(batch._id, batch.priority === 'high' ? 'normal' : 'high');
+                            }}
+                            disabled={updatingPriority === batch._id}
+                            className={`p-1 rounded transition-colors ${
+                              batch.priority === 'high' 
+                                ? 'text-red-500 hover:text-red-600' 
+                                : 'text-gray-400 hover:text-gray-600'
+                            } ${updatingPriority === batch._id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            title={batch.priority === 'high' ? 'Set to Normal Priority' : 'Set to High Priority'}
+                          >
+                            <Star className={`h-4 w-4 ${batch.priority === 'high' ? 'fill-current' : ''}`} />
+                          </button>
+                        ) : (
+                          batch.priority === 'high' && (
+                            <span className="text-red-500 text-xs">🔥</span>
+                          )
                         )}
                       </div>
 
@@ -306,6 +357,17 @@ export default function KanbanBoard() {
                           {batch.flags.length} flag{batch.flags.length !== 1 ? 's' : ''}
                         </div>
                       )}
+
+                      {/* Current User */}
+                      {(() => {
+                        const currentUserWorking = getCurrentUser(batch);
+                        return currentUserWorking ? (
+                          <div className="flex items-center text-xs text-gray-600 mt-2">
+                            <User className="h-3 w-3 mr-1" />
+                            <span className="truncate">{currentUserWorking}</span>
+                          </div>
+                        ) : null;
+                      })()}
 
                       {/* Time */}
                       <div className="flex items-center text-xs text-gray-400 mt-2 pt-2 border-t border-gray-200">

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { batchService, Batch } from '../../services/batchService';
+import { batchService, Batch, BatchEvent } from '../../services/batchService';
 import Button from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
-import { Plus, RefreshCw, Flag, Clock, CheckCircle, AlertCircle, LayoutGrid, Filter, X } from 'lucide-react';
+import { Plus, RefreshCw, Flag, Clock, CheckCircle, AlertCircle, LayoutGrid, Filter, X, User } from 'lucide-react';
 
 interface Filters {
   status?: string;
@@ -53,6 +53,27 @@ export default function WIPBoard() {
     const now = new Date();
     const ageMs = now.getTime() - new Date(startTime).getTime();
     return Math.floor(ageMs / (1000 * 60 * 60)); // Hours
+  };
+
+  // Get the user currently working on the batch (from last step_completed event)
+  const getCurrentUser = (batch: Batch): string | null => {
+    if (!batch.events || batch.events.length === 0) return null;
+    
+    // Find the most recent step_completed event
+    const stepEvents = batch.events
+      .filter((e: BatchEvent) => e.type === 'step_completed')
+      .sort((a: BatchEvent, b: BatchEvent) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+    
+    if (stepEvents.length > 0) {
+      const lastEvent = stepEvents[0];
+      if (lastEvent.user_id && typeof lastEvent.user_id === 'object') {
+        return lastEvent.user_id.username;
+      }
+    }
+    
+    return null;
   };
 
   const getStatusIcon = (status: string) => {
@@ -388,6 +409,17 @@ export default function WIPBoard() {
                           <span className="font-medium">Weight:</span> {batch.initial_weight}g
                         </div>
                       )}
+
+                      {/* Current User */}
+                      {(() => {
+                        const currentUserWorking = getCurrentUser(batch);
+                        return currentUserWorking ? (
+                          <div className="text-sm text-gray-600 flex items-center">
+                            <User className="h-4 w-4 mr-1" />
+                            <span className="font-medium">Working:</span> {currentUserWorking}
+                          </div>
+                        ) : null;
+                      })()}
 
                       {/* Progress Indicator */}
                       {batch.completed_node_ids && batch.flow_id && typeof batch.flow_id === 'object' && (

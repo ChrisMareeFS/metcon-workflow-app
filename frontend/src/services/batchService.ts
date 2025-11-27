@@ -174,6 +174,14 @@ export const batchService = {
   },
 
   /**
+   * Update batch priority
+   */
+  async updatePriority(id: string, priority: 'normal' | 'high'): Promise<Batch> {
+    const response = await api.patch(`/batches/${id}/priority`, { priority });
+    return response.data.data;
+  },
+
+  /**
    * Add an event to batch
    */
   async addEvent(id: string, type: string, data?: Record<string, any>): Promise<Batch> {
