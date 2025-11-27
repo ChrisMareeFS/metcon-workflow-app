@@ -18,7 +18,8 @@ interface ColumnData {
 export default function KanbanBoard() {
   const navigate = useNavigate();
   const { user: currentUser } = useAuthStore();
-  const [pipeline, setPipeline] = useState<'copper' | 'silver' | 'gold'>('copper');
+  const [flows, setFlows] = useState<Flow[]>([]);
+  const [selectedFlowId, setSelectedFlowId] = useState<string>('');
   const [flow, setFlow] = useState<Flow | null>(null);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [columns, setColumns] = useState<ColumnData[]>([]);
@@ -27,15 +28,44 @@ export default function KanbanBoard() {
   const [updatingPriority, setUpdatingPriority] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [pipeline]);
+    loadFlows();
+  }, []);
+
+  useEffect(() => {
+    if (selectedFlowId) {
+      loadData();
+    }
+  }, [selectedFlowId]);
+
+  const loadFlows = async () => {
+    try {
+      // Load all active flows
+      const activeFlows = await flowService.getFlows({ status: 'active' });
+      setFlows(activeFlows);
+      
+      // Select first flow by default
+      if (activeFlows.length > 0 && !selectedFlowId) {
+        setSelectedFlowId(activeFlows[0]._id);
+      }
+    } catch (error) {
+      console.error('Failed to load flows:', error);
+      alert('Failed to load flows');
+    }
+  };
 
   const loadData = async () => {
+    if (!selectedFlowId) return;
+    
     setIsLoading(true);
     try {
-      // Load active flow for pipeline
-      const activeFlow = await flowService.getActiveFlow(pipeline);
-      setFlow(activeFlow);
+      // Load selected flow
+      const selectedFlow = await flowService.getFlow(selectedFlowId);
+      setFlow(selectedFlow);
+      
+      if (!selectedFlow) {
+        setIsLoading(false);
+        return;
+      }
 
       // Load all templates
       const [stations, checks] = await Promise.all([
@@ -48,30 +78,36 @@ export default function KanbanBoard() {
       checks.forEach(t => templateMap.set(t.template_id, t));
       setTemplates(templateMap);
 
-      // Load ALL batches for this pipeline (both in_progress and completed)
+      // Load ALL batches for this flow's pipeline (both in_progress and completed)
       const [inProgressResponse, completedResponse] = await Promise.all([
         batchService.getBatches({ 
-          pipeline,
+          pipeline: selectedFlow.pipeline,
           status: 'in_progress' 
         }),
         batchService.getBatches({ 
-          pipeline,
+          pipeline: selectedFlow.pipeline,
           status: 'completed',
           limit: 20,
         })
       ]);
       
-      const allBatches = [...inProgressResponse.batches, ...completedResponse.batches];
-      setBatches(inProgressResponse.batches);
+      // Filter batches to only show those using the selected flow
+      const allBatches = [...inProgressResponse.batches, ...completedResponse.batches]
+        .filter(b => {
+          const batchFlowId = typeof b.flow_id === 'object' ? b.flow_id._id : b.flow_id;
+          return batchFlowId === selectedFlowId;
+        });
+      setBatches(allBatches.filter(b => b.status === 'in_progress'));
 
       // Create columns from flow nodes - show ALL nodes as columns (even if empty)
-      if (!activeFlow.nodes || activeFlow.nodes.length === 0) {
-        console.error('Active flow has no nodes:', activeFlow);
-        alert('Active flow has no nodes defined. Please check flow configuration.');
+      if (!selectedFlow.nodes || selectedFlow.nodes.length === 0) {
+        console.error('Selected flow has no nodes:', selectedFlow);
+        alert('Selected flow has no nodes defined. Please check flow configuration.');
+        setIsLoading(false);
         return;
       }
       
-      const columnData: ColumnData[] = activeFlow.nodes.map(node => {
+      const columnData: ColumnData[] = selectedFlow.nodes.map(node => {
         const template = templateMap.get(node.template_id);
         return {
           nodeId: node.id,
@@ -186,26 +222,30 @@ export default function KanbanBoard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {getPipelineEmoji(pipeline)} {pipeline.toUpperCase()} Pipeline Board
+              {flow ? `${getPipelineEmoji(flow.pipeline)} ${flow.pipeline.toUpperCase()} Pipeline Board` : 'Kanban Board'}
             </h1>
             <p className="text-sm text-gray-600 mt-1">
-              {flow.name} (v{flow.version}) • {batches.length} active batches
+              {flow ? `${flow.name} (v${flow.version}) • ${batches.length} active batches` : 'Select a flow to view batches'}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Pipeline Selector Dropdown */}
+            {/* Flow Selector Dropdown */}
             <div className="relative">
               <select
-                value={pipeline}
-                onChange={(e) => setPipeline(e.target.value as 'copper' | 'silver' | 'gold')}
-                className="appearance-none bg-white border border-gray-300 rounded-md px-4 py-2 pr-10 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 cursor-pointer"
+                value={selectedFlowId}
+                onChange={(e) => setSelectedFlowId(e.target.value)}
+                className="appearance-none bg-white border border-gray-300 rounded-md px-4 py-2 pr-10 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 cursor-pointer min-w-[200px]"
               >
-                {(['copper', 'silver', 'gold'] as const).map((p) => (
-                  <option key={p} value={p}>
-                    {getPipelineEmoji(p)} {p.charAt(0).toUpperCase() + p.slice(1)}
-                  </option>
-                ))}
+                {flows.length === 0 ? (
+                  <option value="">Loading flows...</option>
+                ) : (
+                  flows.map((f) => (
+                    <option key={f._id} value={f._id}>
+                      {getPipelineEmoji(f.pipeline)} {f.name} (v{f.version})
+                    </option>
+                  ))
+                )}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
             </div>
