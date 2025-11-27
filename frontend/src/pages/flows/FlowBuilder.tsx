@@ -59,6 +59,14 @@ export default function FlowBuilder() {
     initialize();
   }, [id]);
 
+  // Convert flow to nodes when both flow and templates are available
+  useEffect(() => {
+    if (flow && flow._id !== 'new' && flow.nodes && flow.nodes.length > 0 && 
+        stationTemplates.length > 0 && checkTemplates.length > 0) {
+      convertFlowToNodes(flow);
+    }
+  }, [flow, stationTemplates, checkTemplates]);
+
   const loadTemplates = async () => {
     try {
       const [stations, checks] = await Promise.all([
@@ -77,7 +85,7 @@ export default function FlowBuilder() {
     try {
       const data = await flowService.getFlow(flowId);
       setFlow(data);
-      convertFlowToNodes(data);
+      // Don't convert here - let useEffect handle it when templates are ready
     } catch (error) {
       console.error('Failed to load flow:', error);
     } finally {
