@@ -151,14 +151,14 @@ export default function StepRunner() {
         const stationTemplate = template as StationTemplate;
         
         if (stationTemplate.sop && stationTemplate.sop.length > 0) {
-          const allChecked = stationTemplate.sop.every((_, idx) => checklistState[idx]);
+          const allChecked = stationTemplate.sop.every((_, idx) => checklistState[idx] === true);
           if (!allChecked) {
             alert('Please complete all SOP checklist items before proceeding');
             return;
           }
         } else {
           // Fallback: single confirmation checkbox
-          if (!instructionConfirmed) {
+          if (instructionConfirmed !== true) {
             alert('Please confirm you have completed this station');
             return;
           }
@@ -167,15 +167,19 @@ export default function StepRunner() {
         // Check template validation
         const checkTemplate = template as CheckTemplate;
         
-        if (checkTemplate.type === 'instruction' && !instructionConfirmed) {
+        if (checkTemplate.type === 'instruction' && instructionConfirmed !== true) {
           alert('Please confirm you have read the instructions');
           return;
         }
         
         if (checkTemplate.type === 'checklist') {
-          const allChecked = checkTemplate.checklist_items?.every((_, idx) => checklistState[idx]);
+          if (!checkTemplate.checklist_items || checkTemplate.checklist_items.length === 0) {
+            alert('No checklist items defined');
+            return;
+          }
+          const allChecked = checkTemplate.checklist_items.every((_, idx) => checklistState[idx] === true);
           if (!allChecked) {
-            alert('Please complete all checklist items');
+            alert('Please complete all checklist items before proceeding');
             return;
           }
         }
