@@ -715,7 +715,7 @@ router.get('/operator-performance', async (req: AuthRequest, res: Response) => {
  * GET /api/analytics/dashboard-stats
  * Get dashboard statistics (active batches, pending approvals, completed today, avg processing time)
  */
-router.get('/dashboard-stats', async (req: AuthRequest, res, next) => {
+router.get('/dashboard-stats', async (_req: AuthRequest, res, next) => {
   try {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);

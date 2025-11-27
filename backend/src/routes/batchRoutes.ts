@@ -115,10 +115,14 @@ router.post('/', authorize('operator', 'admin'), async (req: AuthRequest, res, n
   try {
     const data = createBatchSchema.parse(req.body);
 
-    // Check if batch number already exists
-    const existing = await Batch.findOne({ batch_number: data.batch_number });
+    // Check if batch number already exists (excluding completed batches)
+    // Allow reusing batch numbers from completed batches
+    const existing = await Batch.findOne({ 
+      batch_number: data.batch_number,
+      status: { $ne: 'completed' } // Only check non-completed batches
+    });
     if (existing) {
-      throw new AppError('Batch number already exists', 400);
+      throw new AppError('Batch number already exists and is not completed', 400);
     }
 
     // Get active flow for the pipeline
