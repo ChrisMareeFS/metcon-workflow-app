@@ -223,13 +223,27 @@ export default function FlowBuilder() {
       convertedFlowIdRef.current = flowSignature;
       console.log('✅ Nodes and edges set successfully');
       
-      // Fit view to show all nodes after a short delay to ensure ReactFlow is ready
-      setTimeout(() => {
-        if (reactFlowInstance) {
-          reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
-          console.log('🎯 Fitted view to show all nodes');
-        }
-      }, 100);
+      // Fit view to show all nodes centered after ReactFlow is ready
+      // Use multiple attempts with increasing delays to ensure ReactFlow is initialized
+      const fitViewAttempts = [100, 300, 500];
+      fitViewAttempts.forEach((delay) => {
+        setTimeout(() => {
+          if (reactFlowInstance) {
+            try {
+              reactFlowInstance.fitView({ 
+                padding: 0.1, 
+                duration: 600,
+                includeHiddenNodes: false,
+                minZoom: 0.1,
+                maxZoom: 2
+              });
+              console.log('🎯 Fitted view to show all nodes (attempt after', delay, 'ms)');
+            } catch (error) {
+              console.warn('Failed to fit view:', error);
+            }
+          }
+        }, delay);
+      });
     } else if (missingTemplates.length > 0) {
       console.error('❌ No nodes created because templates are missing. Missing template IDs:', missingTemplates);
       alert(`Warning: Could not load ${missingTemplates.length} node(s) because their templates are missing. Please check the browser console for details.`);
