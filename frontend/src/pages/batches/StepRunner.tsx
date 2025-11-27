@@ -255,15 +255,22 @@ export default function StepRunner() {
       
       // Check if batch is complete
       if (updatedBatch.status === 'completed') {
-        // Trigger confetti celebration
-        const duration = 3000;
+        // Trigger epic confetti celebration that blows across the screen
+        const duration = 5000; // 5 seconds of celebration
         const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+        const defaults = { 
+          startVelocity: 45, 
+          spread: 70, 
+          ticks: 100, 
+          zIndex: 9999,
+          colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE']
+        };
 
         function randomInRange(min: number, max: number) {
           return Math.random() * (max - min) + min;
         }
 
+        // Create a wave effect that blows across the screen
         const interval: any = setInterval(function() {
           const timeLeft = animationEnd - Date.now();
 
@@ -271,28 +278,48 @@ export default function StepRunner() {
             return clearInterval(interval);
           }
 
-          const particleCount = 50 * (timeLeft / duration);
+          const particleCount = 100 * (timeLeft / duration);
           
-          // Launch confetti from left
-          confetti({
-            ...defaults,
-            particleCount,
-            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-          });
+          // Create a wave effect - confetti blows from left to right across the screen
+          const wavePosition = (Date.now() % 2000) / 2000; // Creates a wave that moves across
           
-          // Launch confetti from right
-          confetti({
-            ...defaults,
-            particleCount,
-            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-          });
-        }, 250);
+          // Launch confetti in a wave pattern from left to right
+          for (let i = 0; i < 5; i++) {
+            const x = (wavePosition + i * 0.2) % 1;
+            const y = randomInRange(0.3, 0.7);
+            
+            confetti({
+              ...defaults,
+              particleCount: Math.floor(particleCount / 5),
+              angle: randomInRange(55, 125), // Blow across at an angle
+              origin: { x, y },
+              drift: randomInRange(-0.5, 0.5), // Add some drift
+            });
+          }
+          
+          // Also add some bursts from the sides
+          if (Math.random() > 0.7) {
+            confetti({
+              ...defaults,
+              particleCount: 30,
+              origin: { x: 0, y: randomInRange(0.2, 0.8) },
+              angle: randomInRange(45, 135),
+            });
+            
+            confetti({
+              ...defaults,
+              particleCount: 30,
+              origin: { x: 1, y: randomInRange(0.2, 0.8) },
+              angle: randomInRange(45, 135),
+            });
+          }
+        }, 50); // Update every 50ms for smooth animation
 
-        // Show success message after a brief delay
+        // Show success message after confetti starts
         setTimeout(() => {
           alert('🎉 Batch completed successfully!');
           navigate('/batches');
-        }, 1000);
+        }, 2000);
       } else {
         // Move to next step
         setBatch(updatedBatch);
