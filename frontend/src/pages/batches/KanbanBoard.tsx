@@ -202,14 +202,35 @@ export default function KanbanBoard() {
     );
   }
 
+  if (flows.length === 0 && !isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">No active flows found</p>
+          <Button variant="primary" onClick={() => navigate('/flows')}>
+            Create Flow
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!flow && selectedFlowId) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin text-primary-600 mx-auto mb-2" />
+          <p className="text-gray-600">Loading flow...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!flow) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">No active flow found for {pipeline} pipeline</p>
-          <Button variant="primary" onClick={() => navigate('/flows')}>
-            Create Flow
-          </Button>
+          <p className="text-gray-600 mb-4">Please select a flow from the dropdown</p>
         </div>
       </div>
     );
