@@ -698,6 +698,7 @@ export default function StepRunner() {
                 Flag Issue
               </Button>
               <Button
+                ref={completeButtonRef}
                 variant="primary"
                 onClick={handleCompleteStep}
                 isLoading={isCompleting}
