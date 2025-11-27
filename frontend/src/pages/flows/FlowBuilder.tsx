@@ -401,6 +401,8 @@ export default function FlowBuilder() {
             onDrop={onDrop}
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
+            minZoom={0.1}
+            maxZoom={2}
             fitView
           >
             <Background variant={BackgroundVariant.Dots} />
