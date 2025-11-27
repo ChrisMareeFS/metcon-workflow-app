@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { batchService, Batch } from '../../services/batchService';
@@ -89,8 +89,11 @@ export default function StepRunner() {
   };
 
   // Check if step can be completed (for button disable state)
+  // Use useMemo to ensure it recalculates when dependencies change
   const canCompleteStep = (): boolean => {
-    if (!batch || !template) return false;
+    if (!batch || !template) {
+      return false;
+    }
 
     // Validate based on template type
     if (!('type' in template)) {
@@ -98,7 +101,10 @@ export default function StepRunner() {
       const stationTemplate = template as StationTemplate;
       
       if (stationTemplate.sop && stationTemplate.sop.length > 0) {
-        // All SOP items must be checked
+        // All SOP items must be checked - check that we have the same number of checked items as SOP items
+        if (Object.keys(checklistState).length < stationTemplate.sop.length) {
+          return false; // Not all items have been interacted with
+        }
         const allChecked = stationTemplate.sop.every((_, idx) => checklistState[idx] === true);
         return allChecked;
       } else {
@@ -117,6 +123,10 @@ export default function StepRunner() {
         // All checklist items must be checked
         if (!checkTemplate.checklist_items || checkTemplate.checklist_items.length === 0) {
           return false; // No items means can't complete
+        }
+        // Check that we have the same number of checked items as checklist items
+        if (Object.keys(checklistState).length < checkTemplate.checklist_items.length) {
+          return false; // Not all items have been interacted with
         }
         const allChecked = checkTemplate.checklist_items.every((_, idx) => checklistState[idx] === true);
         return allChecked;
@@ -804,15 +814,16 @@ export default function StepRunner() {
                 variant="primary"
                 onClick={(e) => {
                   // Double-check validation before allowing click (prevents bypassing disabled state)
-                  if (!canCompleteStep()) {
+                  if (!canCompleteStep) {
                     e.preventDefault();
                     e.stopPropagation();
+                    alert('Please complete all required checkboxes before proceeding');
                     return;
                   }
                   handleCompleteStep();
                 }}
                 isLoading={isCompleting}
-                disabled={isCompleting || !canCompleteStep()}
+                disabled={isCompleting || !canCompleteStep}
                 className="flex-1"
               >
                 Complete Step
