@@ -6,7 +6,7 @@ import { templateService, StationTemplate, CheckTemplate } from '../../services/
 import { useAuthStore } from '../../stores/authStore';
 import Button from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Plus, RefreshCw, Flag, Clock, LayoutList, User } from 'lucide-react';
+import { Plus, RefreshCw, Flag, Clock, LayoutList, User, ChevronDown } from 'lucide-react';
 
 interface ColumnData {
   nodeId: string;
@@ -194,21 +194,20 @@ export default function KanbanBoard() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Pipeline Selector */}
-            <div className="flex gap-2">
-              {(['copper', 'silver', 'gold'] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPipeline(p)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    pipeline === p
-                      ? `${getPipelineColor(p)} text-white`
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {getPipelineEmoji(p)} {p.charAt(0).toUpperCase() + p.slice(1)}
-                </button>
-              ))}
+            {/* Pipeline Selector Dropdown */}
+            <div className="relative">
+              <select
+                value={pipeline}
+                onChange={(e) => setPipeline(e.target.value as 'copper' | 'silver' | 'gold')}
+                className="appearance-none bg-white border border-gray-300 rounded-md px-4 py-2 pr-10 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 cursor-pointer"
+              >
+                {(['copper', 'silver', 'gold'] as const).map((p) => (
+                  <option key={p} value={p}>
+                    {getPipelineEmoji(p)} {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
             </div>
 
             <Button 
