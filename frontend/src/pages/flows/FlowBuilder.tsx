@@ -255,12 +255,19 @@ export default function FlowBuilder() {
 
       if (!reactFlowWrapper.current || !reactFlowInstance) return;
 
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const templateData = JSON.parse(event.dataTransfer.getData('application/reactflow'));
 
+      // Use screenToFlowPosition with screen coordinates directly
+      // It handles the conversion internally, accounting for the canvas position
       const position = reactFlowInstance.screenToFlowPosition({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      console.log('Drop position calculated:', { 
+        clientX: event.clientX, 
+        clientY: event.clientY,
+        flowPosition: position 
       });
 
       const newNode: Node = {
