@@ -564,6 +564,56 @@ export default function WIPBoard() {
             )}
           </div>
         )}
+
+        {/* Delete Confirmation Modal */}
+        {batchToDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <Card className="max-w-md w-full">
+              <CardHeader>
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-red-100 rounded-lg">
+                    <Trash2 className="h-8 w-8 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-xl text-gray-900">Delete Batch</CardTitle>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Are you sure you want to delete batch "{batchToDelete.batch_number}"?
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setBatchToDelete(null)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    disabled={isDeleting}
+                  >
+                    <X className="h-5 w-5 text-gray-600" />
+                  </button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-red-700 font-medium mb-4">
+                  This action cannot be undone. The batch and all its associated data will be permanently deleted.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <Button 
+                    variant="secondary" 
+                    onClick={() => setBatchToDelete(null)} 
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="danger" 
+                    onClick={handleDeleteBatch} 
+                    isLoading={isDeleting}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete Batch'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
