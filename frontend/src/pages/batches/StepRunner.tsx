@@ -802,7 +802,15 @@ export default function StepRunner() {
               <Button
                 ref={completeButtonRef}
                 variant="primary"
-                onClick={handleCompleteStep}
+                onClick={(e) => {
+                  // Double-check validation before allowing click (prevents bypassing disabled state)
+                  if (!canCompleteStep()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
+                  handleCompleteStep();
+                }}
                 isLoading={isCompleting}
                 disabled={isCompleting || !canCompleteStep()}
                 className="flex-1"
