@@ -623,7 +623,7 @@ router.post('/:id/flag', authorize('operator', 'admin'), async (req: AuthRequest
  * DELETE /api/batches/delete-all
  * Delete ALL batches (admin only) - TEMPORARY ENDPOINT FOR CLEANUP
  */
-router.delete('/delete-all', authorize('admin'), async (req: AuthRequest, res, next) => {
+router.delete('/delete-all', authorize('admin'), async (_req: AuthRequest, res, next) => {
   try {
     const countBefore = await Batch.countDocuments({});
     const result = await Batch.deleteMany({});
