@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { batchService, Batch } from '../../services/batchService';
@@ -22,6 +22,7 @@ import {
 export default function StepRunner() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const completeButtonRef = useRef<HTMLButtonElement>(null);
   
   const [batch, setBatch] = useState<Batch | null>(null);
   const [template, setTemplate] = useState<StationTemplate | CheckTemplate | null>(null);
@@ -255,12 +256,26 @@ export default function StepRunner() {
       
       // Check if batch is complete
       if (updatedBatch.status === 'completed') {
-        // Trigger epic confetti celebration that blows across the screen
-        const duration = 5000; // 5 seconds of celebration
+        // Get button position for confetti origin
+        let buttonX = 0.5; // Default to center
+        let buttonY = 0.5;
+        
+        if (completeButtonRef.current) {
+          const rect = completeButtonRef.current.getBoundingClientRect();
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.innerHeight;
+          
+          // Calculate button center position as percentage of screen
+          buttonX = (rect.left + rect.width / 2) / windowWidth;
+          buttonY = (rect.top + rect.height / 2) / windowHeight;
+        }
+
+        // Trigger confetti celebration spewing from the button
+        const duration = 3000; // 3 seconds of celebration
         const animationEnd = Date.now() + duration;
         const defaults = { 
-          startVelocity: 45, 
-          spread: 70, 
+          startVelocity: 50, 
+          spread: 60, 
           ticks: 100, 
           zIndex: 9999,
           colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE']
@@ -270,7 +285,7 @@ export default function StepRunner() {
           return Math.random() * (max - min) + min;
         }
 
-        // Create a wave effect that blows across the screen
+        // Create confetti bursts from the button
         const interval: any = setInterval(function() {
           const timeLeft = animationEnd - Date.now();
 
@@ -278,48 +293,38 @@ export default function StepRunner() {
             return clearInterval(interval);
           }
 
-          const particleCount = 100 * (timeLeft / duration);
+          const particleCount = 80 * (timeLeft / duration);
           
-          // Create a wave effect - confetti blows from left to right across the screen
-          const wavePosition = (Date.now() % 2000) / 2000; // Creates a wave that moves across
+          // Launch confetti in all directions from the button
+          confetti({
+            ...defaults,
+            particleCount: Math.floor(particleCount * 0.4),
+            angle: randomInRange(45, 135), // Upward arc
+            origin: { x: buttonX, y: buttonY },
+            gravity: 0.8,
+          });
           
-          // Launch confetti in a wave pattern from left to right
-          for (let i = 0; i < 5; i++) {
-            const x = (wavePosition + i * 0.2) % 1;
-            const y = randomInRange(0.3, 0.7);
-            
-            confetti({
-              ...defaults,
-              particleCount: Math.floor(particleCount / 5),
-              angle: randomInRange(55, 125), // Blow across at an angle
-              origin: { x, y },
-              drift: randomInRange(-0.5, 0.5), // Add some drift
-            });
-          }
+          confetti({
+            ...defaults,
+            particleCount: Math.floor(particleCount * 0.3),
+            angle: randomInRange(0, 45), // Leftward arc
+            origin: { x: buttonX, y: buttonY },
+            gravity: 0.8,
+          });
           
-          // Also add some bursts from the sides
-          if (Math.random() > 0.7) {
-            confetti({
-              ...defaults,
-              particleCount: 30,
-              origin: { x: 0, y: randomInRange(0.2, 0.8) },
-              angle: randomInRange(45, 135),
-            });
-            
-            confetti({
-              ...defaults,
-              particleCount: 30,
-              origin: { x: 1, y: randomInRange(0.2, 0.8) },
-              angle: randomInRange(45, 135),
-            });
-          }
+          confetti({
+            ...defaults,
+            particleCount: Math.floor(particleCount * 0.3),
+            angle: randomInRange(135, 180), // Rightward arc
+            origin: { x: buttonX, y: buttonY },
+            gravity: 0.8,
+          });
         }, 50); // Update every 50ms for smooth animation
 
-        // Show success message after confetti starts
+        // Navigate after confetti animation completes
         setTimeout(() => {
-          alert('🎉 Batch completed successfully!');
           navigate('/batches');
-        }, 2000);
+        }, duration + 500); // Wait for animation + small buffer
       } else {
         // Move to next step
         setBatch(updatedBatch);
