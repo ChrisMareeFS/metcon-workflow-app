@@ -10,6 +10,6 @@ chmod +x deploy-update.sh
 "@
 
 Write-Host "Connecting to droplet and running deployment..." -ForegroundColor Green
-ssh root@$dropletIP $commands
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519_metcon" root@$dropletIP $commands
 
 

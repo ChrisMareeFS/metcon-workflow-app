@@ -15,8 +15,8 @@ chmod +x deploy-update.sh
 ./deploy-update.sh
 "@
 
-# Run commands via SSH
-ssh root@$dropletIP $deploymentCommands
+# Run commands via SSH using the MetCon SSH key
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519_metcon" root@$dropletIP $deploymentCommands
 
 Write-Host ""
 Write-Host "✅ Deployment complete!" -ForegroundColor Green
