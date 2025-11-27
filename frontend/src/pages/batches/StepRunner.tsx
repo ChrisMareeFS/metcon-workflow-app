@@ -88,6 +88,52 @@ export default function StepRunner() {
     }
   };
 
+  // Check if step can be completed (for button disable state)
+  const canCompleteStep = (): boolean => {
+    if (!batch || !template) return false;
+
+    // Skip validation for mass_check (handled by MassCheckStep component)
+    if ('type' in template && (template as CheckTemplate).type === 'mass_check') {
+      return true; // MassCheckStep handles its own validation
+    }
+
+    // Validate based on template type
+    if (!('type' in template)) {
+      // Station template with SOP checklist
+      const stationTemplate = template as StationTemplate;
+      
+      if (stationTemplate.sop && stationTemplate.sop.length > 0) {
+        const allChecked = stationTemplate.sop.every((_, idx) => checklistState[idx]);
+        return allChecked;
+      } else {
+        // Fallback: single confirmation checkbox
+        return instructionConfirmed;
+      }
+    } else {
+      // Check template validation
+      const checkTemplate = template as CheckTemplate;
+      
+      if (checkTemplate.type === 'instruction') {
+        return instructionConfirmed;
+      }
+      
+      if (checkTemplate.type === 'checklist') {
+        const allChecked = checkTemplate.checklist_items?.every((_, idx) => checklistState[idx]);
+        return allChecked || false;
+      }
+      
+      if (checkTemplate.type === 'mass_check') {
+        return !!massValue; // Mass value is required
+      }
+      
+      if (checkTemplate.type === 'signature') {
+        return !!signatureValue; // Signature is required
+      }
+    }
+
+    return true; // Default: allow completion
+  };
+
   const handleCompleteStep = async (overrideStepData?: any) => {
     if (!batch || !template) return;
 
@@ -748,20 +794,11 @@ export default function StepRunner() {
                 variant="primary"
                 onClick={handleCompleteStep}
                 isLoading={isCompleting}
-                disabled={isCompleting}
+                disabled={isCompleting || !canCompleteStep()}
                 className="flex-1"
               >
-                {isCompleting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Completing...
-                  </>
-                ) : (
-                  <>
-                    Complete Step
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </>
-                )}
+                Complete Step
+                <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             </div>
           </CardContent>

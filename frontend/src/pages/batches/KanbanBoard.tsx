@@ -37,6 +37,29 @@ export default function KanbanBoard() {
     }
   }, [selectedFlowId]);
 
+  // Refresh when page becomes visible (user returns from creating a batch)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && selectedFlowId) {
+        loadData();
+      }
+    };
+
+    const handleFocus = () => {
+      if (selectedFlowId) {
+        loadData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [selectedFlowId]);
+
   const loadFlows = async () => {
     try {
       // Load all active flows
@@ -78,26 +101,26 @@ export default function KanbanBoard() {
       checks.forEach(t => templateMap.set(t.template_id, t));
       setTemplates(templateMap);
 
-      // Load ALL batches for this flow's pipeline (both in_progress and completed)
-      const [inProgressResponse, completedResponse] = await Promise.all([
+      // Load ALL batches for this flow's pipeline (created, in_progress, and completed)
+      const [createdResponse, inProgressResponse, completedResponse] = await Promise.all([
         batchService.getBatches({ 
-          pipeline: selectedFlow.pipeline,
+          flow_id: selectedFlowId,
+          status: 'created' 
+        }),
+        batchService.getBatches({ 
+          flow_id: selectedFlowId,
           status: 'in_progress' 
         }),
         batchService.getBatches({ 
-          pipeline: selectedFlow.pipeline,
+          flow_id: selectedFlowId,
           status: 'completed',
           limit: 20,
         })
       ]);
       
-      // Filter batches to only show those using the selected flow
-      const allBatches = [...inProgressResponse.batches, ...completedResponse.batches]
-        .filter(b => {
-          const batchFlowId = typeof b.flow_id === 'object' ? b.flow_id._id : b.flow_id;
-          return batchFlowId === selectedFlowId;
-        });
-      setBatches(allBatches.filter(b => b.status === 'in_progress'));
+      // Combine all batches (already filtered by flow_id in the API call)
+      const allBatches = [...createdResponse.batches, ...inProgressResponse.batches, ...completedResponse.batches];
+      setBatches(allBatches.filter(b => b.status === 'in_progress' || b.status === 'created'));
 
       // Create columns from flow nodes - show ALL nodes as columns (even if empty)
       if (!selectedFlow.nodes || selectedFlow.nodes.length === 0) {

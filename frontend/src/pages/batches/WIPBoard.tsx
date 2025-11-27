@@ -15,13 +15,34 @@ export default function WIPBoard() {
   const navigate = useNavigate();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filters, setFilters] = useState<Filters>({ status: 'in_progress' });
+  const [filters, setFilters] = useState<Filters>({ status: 'in_progress' }); // Include 'created' status too
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   useEffect(() => {
     loadBatches();
+  }, [filters]);
+
+  // Refresh when page becomes visible (user returns from creating a batch)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadBatches(true); // Silent refresh
+      }
+    };
+
+    const handleFocus = () => {
+      loadBatches(true); // Silent refresh when window regains focus
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [filters]);
 
   // Auto-refresh every 30 seconds
@@ -38,8 +59,17 @@ export default function WIPBoard() {
   const loadBatches = async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const response = await batchService.getBatches(filters);
-      setBatches(response.batches);
+      // Load both 'in_progress' and 'created' batches to show newly created batches
+      const [inProgressResponse, createdResponse] = await Promise.all([
+        batchService.getBatches({ ...filters, status: 'in_progress' }),
+        batchService.getBatches({ ...filters, status: 'created' }),
+      ]);
+      // Combine and deduplicate
+      const allBatches = [...inProgressResponse.batches, ...createdResponse.batches];
+      const uniqueBatches = allBatches.filter((batch, index, self) => 
+        index === self.findIndex(b => b._id === batch._id)
+      );
+      setBatches(uniqueBatches);
       setLastRefresh(new Date());
     } catch (error) {
       console.error('Failed to load batches:', error);
