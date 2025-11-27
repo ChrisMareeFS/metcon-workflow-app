@@ -92,46 +92,52 @@ export default function StepRunner() {
   const canCompleteStep = (): boolean => {
     if (!batch || !template) return false;
 
-    // Skip validation for mass_check (handled by MassCheckStep component)
-    if ('type' in template && (template as CheckTemplate).type === 'mass_check') {
-      return true; // MassCheckStep handles its own validation
-    }
-
     // Validate based on template type
     if (!('type' in template)) {
       // Station template with SOP checklist
       const stationTemplate = template as StationTemplate;
       
       if (stationTemplate.sop && stationTemplate.sop.length > 0) {
-        const allChecked = stationTemplate.sop.every((_, idx) => checklistState[idx]);
+        // All SOP items must be checked
+        const allChecked = stationTemplate.sop.every((_, idx) => checklistState[idx] === true);
         return allChecked;
       } else {
-        // Fallback: single confirmation checkbox
-        return instructionConfirmed;
+        // Fallback: single confirmation checkbox must be checked
+        return instructionConfirmed === true;
       }
     } else {
       // Check template validation
       const checkTemplate = template as CheckTemplate;
       
       if (checkTemplate.type === 'instruction') {
-        return instructionConfirmed;
+        return instructionConfirmed === true;
       }
       
       if (checkTemplate.type === 'checklist') {
-        const allChecked = checkTemplate.checklist_items?.every((_, idx) => checklistState[idx]);
-        return allChecked || false;
+        // All checklist items must be checked
+        if (!checkTemplate.checklist_items || checkTemplate.checklist_items.length === 0) {
+          return false; // No items means can't complete
+        }
+        const allChecked = checkTemplate.checklist_items.every((_, idx) => checklistState[idx] === true);
+        return allChecked;
       }
       
       if (checkTemplate.type === 'mass_check') {
-        return !!massValue; // Mass value is required
+        // MassCheckStep handles its own validation, but we can check if massValue exists
+        return !!massValue;
       }
       
       if (checkTemplate.type === 'signature') {
-        return !!signatureValue; // Signature is required
+        return !!signatureValue && signatureValue.trim().length > 0;
+      }
+      
+      if (checkTemplate.type === 'photo') {
+        return !!photoFile;
       }
     }
 
-    return true; // Default: allow completion
+    // Default: don't allow completion if we don't know the type
+    return false;
   };
 
   const handleCompleteStep = async (overrideStepData?: any) => {

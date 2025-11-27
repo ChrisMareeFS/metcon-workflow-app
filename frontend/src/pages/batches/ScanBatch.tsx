@@ -891,14 +891,7 @@ export default function ScanBatch() {
                   disabled={isCreating || !formData.batch_number || !formData.pipeline}
                   className="flex-1 sm:flex-initial sm:min-w-[200px] text-base sm:text-lg py-3 sm:py-4"
                 >
-                  {isCreating ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Starting...
-                    </>
-                  ) : (
-                    'Start Batch'
-                  )}
+                  Start Batch
                 </Button>
               </div>
             </form>
