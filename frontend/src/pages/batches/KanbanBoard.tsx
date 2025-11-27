@@ -5,8 +5,8 @@ import { flowService, Flow } from '../../services/flowService';
 import { templateService, StationTemplate, CheckTemplate } from '../../services/templateService';
 import { useAuthStore } from '../../stores/authStore';
 import Button from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Plus, RefreshCw, Flag, Clock, LayoutList, User, ChevronDown } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Plus, RefreshCw, Flag, Clock, LayoutList, User, ChevronDown, Trash2, X } from 'lucide-react';
 
 interface ColumnData {
   nodeId: string;
@@ -26,6 +26,8 @@ export default function KanbanBoard() {
   const [, setTemplates] = useState<Map<string, StationTemplate | CheckTemplate>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [updatingPriority, setUpdatingPriority] = useState<string | null>(null);
+  const [batchToDelete, setBatchToDelete] = useState<Batch | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadFlows();

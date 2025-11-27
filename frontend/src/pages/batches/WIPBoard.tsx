@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { batchService, Batch, BatchEvent } from '../../services/batchService';
+import { useAuthStore } from '../../stores/authStore';
 import Button from '../../components/ui/Button';
-import { Card, CardContent } from '../../components/ui/Card';
-import { Plus, RefreshCw, Flag, Clock, CheckCircle, AlertCircle, LayoutGrid, Filter, X, User } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Plus, RefreshCw, Flag, Clock, CheckCircle, AlertCircle, LayoutGrid, Filter, X, User, Trash2 } from 'lucide-react';
 
 interface Filters {
   status?: string;
@@ -374,18 +375,20 @@ export default function WIPBoard() {
               return (
                 <Card
                   key={batch._id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => {
-                    if (batch.status === 'in_progress' || batch.status === 'created') {
-                      navigate(`/batches/${batch._id}/execute`);
-                    } else {
-                      navigate(`/batches/${batch._id}`);
-                    }
-                  }}
+                  className="hover:shadow-lg transition-shadow"
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
+                      <div 
+                        className="flex-1 cursor-pointer"
+                        onClick={() => {
+                          if (batch.status === 'in_progress' || batch.status === 'created') {
+                            navigate(`/batches/${batch._id}/execute`);
+                          } else {
+                            navigate(`/batches/${batch._id}`);
+                          }
+                        }}
+                      >
                         <h3 className="font-bold text-lg text-gray-900 mb-1">
                           {batch.batch_number}
                         </h3>
@@ -395,7 +398,21 @@ export default function WIPBoard() {
                           </p>
                         )}
                       </div>
-                      {getStatusIcon(batch.status)}
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(batch.status)}
+                        {user?.role === 'admin' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setBatchToDelete(batch);
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete batch"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-3">
