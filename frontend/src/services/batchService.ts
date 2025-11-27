@@ -216,6 +216,14 @@ export const batchService = {
     const response = await api.post(`/batches/${batchId}/approve-exception`, approvalData);
     return response.data.data;
   },
+
+  /**
+   * Delete a batch (admin only)
+   */
+  async deleteBatch(batchId: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.delete(`/batches/${batchId}`);
+    return response.data;
+  },
 };
 
 
