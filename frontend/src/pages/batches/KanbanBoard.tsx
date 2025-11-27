@@ -61,7 +61,13 @@ export default function KanbanBoard() {
       const allBatches = [...inProgressResponse.batches, ...completedResponse.batches];
       setBatches(inProgressResponse.batches);
 
-      // Create columns from flow nodes (only show columns for active flow steps)
+      // Create columns from flow nodes - show ALL nodes as columns (even if empty)
+      if (!activeFlow.nodes || activeFlow.nodes.length === 0) {
+        console.error('Active flow has no nodes:', activeFlow);
+        alert('Active flow has no nodes defined. Please check flow configuration.');
+        return;
+      }
+      
       const columnData: ColumnData[] = activeFlow.nodes.map(node => {
         const template = templateMap.get(node.template_id);
         return {
@@ -134,7 +140,7 @@ export default function KanbanBoard() {
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden" style={{ margin: 0, padding: 0 }}>
+    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4 flex-shrink-0 shadow-sm">
         <div className="flex items-center justify-between">
