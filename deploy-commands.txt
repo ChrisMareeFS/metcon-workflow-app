@@ -26,3 +26,4 @@ curl -s http://localhost:80/api/health
 echo ""
 echo "✅ Deployment complete! App accessible at: http://142.93.224.115"
 
+

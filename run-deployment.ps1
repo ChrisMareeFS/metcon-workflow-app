@@ -22,3 +22,4 @@ Write-Host ""
 Write-Host "✅ Deployment complete!" -ForegroundColor Green
 Write-Host "Your app should be accessible at: http://$dropletIP" -ForegroundColor Cyan
 
+

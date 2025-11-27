@@ -149,3 +149,4 @@ echo "🔄 If services aren't healthy, wait 1-2 minutes and check again."
 echo "   Or run: ./diagnose-deployment.sh"
 echo ""
 
+
