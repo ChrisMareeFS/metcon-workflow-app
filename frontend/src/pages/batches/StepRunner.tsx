@@ -256,6 +256,8 @@ export default function StepRunner() {
       
       // Check if batch is complete
       if (updatedBatch.status === 'completed') {
+        console.log('🎉 Batch completed! Triggering confetti...');
+        
         // Get button position for confetti origin
         let buttonX = 0.5; // Default to center
         let buttonY = 0.5;
@@ -268,6 +270,10 @@ export default function StepRunner() {
           // Calculate button center position as percentage of screen
           buttonX = (rect.left + rect.width / 2) / windowWidth;
           buttonY = (rect.top + rect.height / 2) / windowHeight;
+          
+          console.log('Button position:', { buttonX, buttonY, rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } });
+        } else {
+          console.warn('Button ref not available, using center position');
         }
 
         // Trigger confetti celebration spewing from the button
@@ -285,44 +291,84 @@ export default function StepRunner() {
           return Math.random() * (max - min) + min;
         }
 
+        // Initial burst for immediate feedback
+        try {
+          confetti({
+            ...defaults,
+            particleCount: 200,
+            angle: 90,
+            spread: 70,
+            origin: { x: buttonX, y: buttonY },
+            gravity: 0.8,
+          });
+          
+          confetti({
+            ...defaults,
+            particleCount: 150,
+            angle: 60,
+            spread: 50,
+            origin: { x: buttonX, y: buttonY },
+            gravity: 0.8,
+          });
+          
+          confetti({
+            ...defaults,
+            particleCount: 150,
+            angle: 120,
+            spread: 50,
+            origin: { x: buttonX, y: buttonY },
+            gravity: 0.8,
+          });
+          
+          console.log('Initial confetti burst fired');
+        } catch (error) {
+          console.error('Error firing confetti:', error);
+        }
+
         // Create confetti bursts from the button
         const interval: any = setInterval(function() {
           const timeLeft = animationEnd - Date.now();
 
           if (timeLeft <= 0) {
+            console.log('Confetti animation complete');
             return clearInterval(interval);
           }
 
           const particleCount = 80 * (timeLeft / duration);
           
-          // Launch confetti in all directions from the button
-          confetti({
-            ...defaults,
-            particleCount: Math.floor(particleCount * 0.4),
-            angle: randomInRange(45, 135), // Upward arc
-            origin: { x: buttonX, y: buttonY },
-            gravity: 0.8,
-          });
-          
-          confetti({
-            ...defaults,
-            particleCount: Math.floor(particleCount * 0.3),
-            angle: randomInRange(0, 45), // Leftward arc
-            origin: { x: buttonX, y: buttonY },
-            gravity: 0.8,
-          });
-          
-          confetti({
-            ...defaults,
-            particleCount: Math.floor(particleCount * 0.3),
-            angle: randomInRange(135, 180), // Rightward arc
-            origin: { x: buttonX, y: buttonY },
-            gravity: 0.8,
-          });
+          try {
+            // Launch confetti in all directions from the button
+            confetti({
+              ...defaults,
+              particleCount: Math.floor(particleCount * 0.4),
+              angle: randomInRange(45, 135), // Upward arc
+              origin: { x: buttonX, y: buttonY },
+              gravity: 0.8,
+            });
+            
+            confetti({
+              ...defaults,
+              particleCount: Math.floor(particleCount * 0.3),
+              angle: randomInRange(0, 45), // Leftward arc
+              origin: { x: buttonX, y: buttonY },
+              gravity: 0.8,
+            });
+            
+            confetti({
+              ...defaults,
+              particleCount: Math.floor(particleCount * 0.3),
+              angle: randomInRange(135, 180), // Rightward arc
+              origin: { x: buttonX, y: buttonY },
+              gravity: 0.8,
+            });
+          } catch (error) {
+            console.error('Error in confetti interval:', error);
+          }
         }, 50); // Update every 50ms for smooth animation
 
         // Navigate after confetti animation completes
         setTimeout(() => {
+          console.log('Navigating to batches page');
           navigate('/batches');
         }, duration + 500); // Wait for animation + small buffer
       } else {
