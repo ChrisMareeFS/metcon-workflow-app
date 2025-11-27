@@ -195,7 +195,7 @@ export default function KanbanBoard() {
 
       {/* Kanban Board */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="inline-flex gap-4 p-6 min-w-full h-full">
+        <div className="inline-flex gap-4 p-6 h-full" style={{ minWidth: 'max-content' }}>
           {columns.map((column) => (
             <div
               key={column.nodeId}
