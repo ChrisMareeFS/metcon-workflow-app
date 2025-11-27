@@ -93,6 +93,14 @@ export const flowService = {
   },
 
   /**
+   * Deactivate a flow
+   */
+  async deactivateFlow(id: string): Promise<Flow> {
+    const response = await api.patch(`/flows/${id}/deactivate`);
+    return response.data.data;
+  },
+
+  /**
    * Delete a flow
    */
   async deleteFlow(id: string): Promise<void> {

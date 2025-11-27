@@ -8,6 +8,7 @@ interface FlowHeaderProps {
   onUpdateFlow: (flow: Flow) => void;
   onSave: () => void;
   onActivate: () => void;
+  onDeactivate: () => void;
   onBack: () => void;
   isSaving: boolean;
 }
@@ -17,6 +18,7 @@ export default function FlowHeader({
   onUpdateFlow,
   onSave,
   onActivate,
+  onDeactivate,
   onBack,
   isSaving,
 }: FlowHeaderProps) {
@@ -93,11 +95,32 @@ export default function FlowHeader({
           {isSaving ? 'Saving...' : 'Save Draft'}
         </Button>
 
-        {(flow.status === 'draft' || flow.status === 'archived') && flow._id !== 'new' && (
-          <Button variant="primary" onClick={onActivate}>
-            <Play className="h-4 w-4 mr-2" />
-            {flow.status === 'archived' ? 'Re-activate Flow' : 'Activate Flow'}
-          </Button>
+        {flow._id !== 'new' && (
+          <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
+            <span className={`text-sm font-medium ${flow.status === 'active' ? 'text-green-700' : 'text-gray-600'}`}>
+              {flow.status === 'active' ? 'Active' : 'Inactive'}
+            </span>
+            <button
+              onClick={() => {
+                if (flow.status === 'active') {
+                  onDeactivate();
+                } else {
+                  onActivate();
+                }
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                flow.status === 'active' ? 'bg-green-600' : 'bg-gray-300'
+              }`}
+              role="switch"
+              aria-checked={flow.status === 'active'}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  flow.status === 'active' ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
         )}
       </div>
     </header>

@@ -300,12 +300,37 @@ export default function FlowBuilder() {
     }
 
     try {
-      await flowService.activateFlow(flow._id);
+      const updatedFlow = await flowService.activateFlow(flow._id);
+      setFlow(updatedFlow);
       alert(`Flow ${statusText}d successfully!`);
-      navigate('/flows');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to activate flow:', error);
-      alert('Failed to activate flow. Please try again.');
+      alert(error.response?.data?.error || 'Failed to activate flow. Please try again.');
+    }
+  };
+
+  const deactivateFlow = async () => {
+    if (!flow || !flow._id || flow._id === 'new') {
+      return;
+    }
+
+    const message = `Are you sure you want to deactivate this flow?\n\n` +
+      `This will:\n` +
+      `• Set the flow status to draft\n` +
+      `• Prevent new batches from using this flow\n` +
+      `• Existing batches will continue using this flow`;
+
+    if (!confirm(message)) {
+      return;
+    }
+
+    try {
+      const updatedFlow = await flowService.deactivateFlow(flow._id);
+      setFlow(updatedFlow);
+      alert('Flow deactivated successfully!');
+    } catch (error: any) {
+      console.error('Failed to deactivate flow:', error);
+      alert(error.response?.data?.error || 'Failed to deactivate flow. Please try again.');
     }
   };
 
@@ -332,6 +357,7 @@ export default function FlowBuilder() {
         onUpdateFlow={setFlow}
         onSave={saveFlow}
         onActivate={activateFlow}
+        onDeactivate={deactivateFlow}
         onBack={() => navigate('/flows')}
         isSaving={isSaving}
       />

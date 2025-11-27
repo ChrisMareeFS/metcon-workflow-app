@@ -203,6 +203,48 @@ router.patch('/:id/activate', authorize('admin'), async (req: AuthRequest, res, 
 });
 
 /**
+ * PATCH /api/flows/:id/deactivate
+ * Deactivate a flow (admin only) - sets status to draft
+ */
+router.patch('/:id/deactivate', authorize('admin'), async (req: AuthRequest, res, next) => {
+  try {
+    const flow = await Flow.findById(req.params.id);
+
+    if (!flow) {
+      throw new AppError('Flow not found', 404);
+    }
+
+    if (flow.status !== 'active') {
+      throw new AppError('Flow is not active', 400);
+    }
+
+    // Check if batches are using this flow
+    const { Batch } = await import('../models/Batch.js');
+    const batchesUsingFlow = await Batch.countDocuments({ 
+      flow_id: flow._id,
+      status: { $in: ['created', 'in_progress'] }
+    });
+    
+    if (batchesUsingFlow > 0) {
+      throw new AppError(
+        `Cannot deactivate flow. ${batchesUsingFlow} batch(es) are currently using this flow. Please wait for batches to complete or reassign them.`,
+        400
+      );
+    }
+
+    flow.status = 'draft';
+    await flow.save();
+
+    res.json({
+      success: true,
+      data: flow,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * DELETE /api/flows/:id
  * Delete a flow (admin only)
  */
