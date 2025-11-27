@@ -216,6 +216,23 @@ export default function KanbanBoard() {
     }
   };
 
+  const handleDeleteBatch = async () => {
+    if (!batchToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await batchService.deleteBatch(batchToDelete._id);
+      alert(`Batch ${batchToDelete.batch_number} deleted successfully.`);
+      setBatchToDelete(null);
+      loadData(); // Refresh the board
+    } catch (error: any) {
+      console.error('Failed to delete batch:', error);
+      alert(error.response?.data?.error || 'Failed to delete batch. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
