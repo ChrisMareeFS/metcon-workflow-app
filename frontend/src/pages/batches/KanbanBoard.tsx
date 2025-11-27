@@ -6,7 +6,7 @@ import { templateService, StationTemplate, CheckTemplate } from '../../services/
 import { useAuthStore } from '../../stores/authStore';
 import Button from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Plus, RefreshCw, Flag, Clock, LayoutList, User, Star } from 'lucide-react';
+import { Plus, RefreshCw, Flag, Clock, LayoutList, User } from 'lucide-react';
 
 interface ColumnData {
   nodeId: string;
@@ -269,7 +269,7 @@ export default function KanbanBoard() {
                       }}
                     >
                       {/* Batch Number and Priority Toggle */}
-                      <div className="font-bold text-gray-900 mb-2 flex items-center justify-between">
+                      <div className="font-bold text-gray-900 mb-2 flex items-center justify-between gap-2">
                         <span className="truncate">{batch.batch_number}</span>
                         {currentUser?.role === 'admin' ? (
                           <button
@@ -278,18 +278,20 @@ export default function KanbanBoard() {
                               handlePriorityChange(batch._id, batch.priority === 'high' ? 'normal' : 'high');
                             }}
                             disabled={updatingPriority === batch._id}
-                            className={`p-1 rounded transition-colors ${
-                              batch.priority === 'high' 
-                                ? 'text-red-500 hover:text-red-600' 
-                                : 'text-gray-400 hover:text-gray-600'
+                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                              batch.priority === 'high'
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             } ${updatingPriority === batch._id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                             title={batch.priority === 'high' ? 'Set to Normal Priority' : 'Set to High Priority'}
                           >
-                            <Star className={`h-4 w-4 ${batch.priority === 'high' ? 'fill-current' : ''}`} />
+                            {batch.priority === 'high' ? 'High' : 'Normal'}
                           </button>
                         ) : (
                           batch.priority === 'high' && (
-                            <span className="text-red-500 text-xs">🔥</span>
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700">
+                              High
+                            </span>
                           )
                         )}
                       </div>
