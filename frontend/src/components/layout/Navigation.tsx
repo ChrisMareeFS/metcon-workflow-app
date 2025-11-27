@@ -14,7 +14,12 @@ import {
   ChevronDown,
   ListChecks,
   Boxes,
+  Clock,
 } from 'lucide-react';
+
+// Build timestamp injected at build time
+declare const __BUILD_TIME__: string;
+const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toISOString();
 
 interface MenuItem {
   name: string;
