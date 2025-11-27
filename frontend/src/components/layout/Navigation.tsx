@@ -170,6 +170,16 @@ export default function Navigation({ onSidebarToggle }: NavigationProps) {
 
   return (
     <>
+      {/* Build Timestamp - Top Right Corner */}
+      <div className="fixed top-4 right-4 z-50 bg-white rounded-lg shadow-md px-3 py-2 border border-gray-200">
+        <div className="flex items-center gap-2 text-xs text-gray-600">
+          <Clock className="h-3.5 w-3.5" />
+          <span className="font-mono">
+            {new Date(BUILD_TIME).toLocaleString()}
+          </span>
+        </div>
+      </div>
+
       {/* Mobile Menu Toggle - Only visible on mobile */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
