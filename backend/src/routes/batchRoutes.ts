@@ -45,6 +45,15 @@ router.get('/', async (req: AuthRequest, res, next) => {
 
     console.log(`[GET /api/batches] Found ${batches.length} batches (total: ${total}) with filter:`, filter);
 
+    // Prevent caching of batch data
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Last-Modified': new Date().toUTCString(),
+      'ETag': `"${Date.now()}-${batches.length}"`, // Dynamic ETag to prevent 304 responses
+    });
+
     res.json({
       success: true,
       data: {
