@@ -712,6 +712,139 @@ router.get('/operator-performance', async (req: AuthRequest, res: Response) => {
 });
 
 /**
+ * GET /api/analytics/dashboard-stats
+ * Get dashboard statistics (active batches, pending approvals, completed today, avg processing time)
+ */
+router.get('/dashboard-stats', async (req: AuthRequest, res, next) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const yesterdayEnd = new Date(todayEnd);
+    yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+
+    // 1. Active Batches (in_progress, created, flagged, blocked)
+    const activeBatches = await Batch.countDocuments({
+      status: { $in: ['in_progress', 'created', 'flagged', 'blocked'] },
+    });
+
+    // Active batches from yesterday for comparison
+    const activeBatchesYesterday = await Batch.countDocuments({
+      status: { $in: ['in_progress', 'created', 'flagged', 'blocked'] },
+      updated_at: { $gte: yesterdayStart, $lte: yesterdayEnd },
+    });
+
+    const activeBatchesChange = activeBatches - activeBatchesYesterday;
+
+    // 2. Pending Approvals (flags without approved_by)
+    const pendingApprovalsResult = await Batch.aggregate([
+      {
+        $match: {
+          'flags.0': { $exists: true },
+        },
+      },
+      {
+        $unwind: '$flags',
+      },
+      {
+        $match: {
+          'flags.approved_by': { $exists: false },
+        },
+      },
+      {
+        $count: 'total',
+      },
+    ]);
+
+    const pendingCount = pendingApprovalsResult.length > 0 ? pendingApprovalsResult[0].total : 0;
+
+    // Count how many require attention (flagged batches)
+    const flaggedBatches = await Batch.countDocuments({
+      status: 'flagged',
+    });
+
+    // 3. Completed Today
+    const completedToday = await Batch.countDocuments({
+      status: 'completed',
+      completed_at: { $gte: todayStart, $lte: todayEnd },
+    });
+
+    // Completed yesterday for comparison
+    const completedYesterday = await Batch.countDocuments({
+      status: 'completed',
+      completed_at: { $gte: yesterdayStart, $lte: yesterdayEnd },
+    });
+
+    const completedChange = completedYesterday > 0
+      ? ((completedToday - completedYesterday) / completedYesterday * 100).toFixed(0)
+      : completedToday > 0 ? '100' : '0';
+
+    // 4. Avg Processing Time (from completed batches)
+    const completedBatches = await Batch.find({
+      status: 'completed',
+      started_at: { $ne: null },
+      completed_at: { $ne: null },
+    }).limit(100); // Limit for performance
+
+    let totalProcessingHours = 0;
+    let batchCount = 0;
+
+    completedBatches.forEach((batch) => {
+      if (batch.started_at && batch.completed_at) {
+        const hours = (batch.completed_at.getTime() - batch.started_at.getTime()) / (1000 * 60 * 60);
+        totalProcessingHours += hours;
+        batchCount++;
+      }
+    });
+
+    const avgProcessingHours = batchCount > 0 ? totalProcessingHours / batchCount : 0;
+
+    // Calculate previous average for comparison (last 100 batches before today)
+    const previousBatches = await Batch.find({
+      status: 'completed',
+      started_at: { $ne: null },
+      completed_at: { $ne: null, $lt: todayStart },
+    })
+      .sort({ completed_at: -1 })
+      .limit(100);
+
+    let previousTotalHours = 0;
+    let previousCount = 0;
+
+    previousBatches.forEach((batch) => {
+      if (batch.started_at && batch.completed_at) {
+        const hours = (batch.completed_at.getTime() - batch.started_at.getTime()) / (1000 * 60 * 60);
+        previousTotalHours += hours;
+        previousCount++;
+      }
+    });
+
+    const previousAvgHours = previousCount > 0 ? previousTotalHours / previousCount : 0;
+    const processingTimeChange = previousAvgHours > 0
+      ? (avgProcessingHours - previousAvgHours).toFixed(1)
+      : '0';
+
+    res.json({
+      success: true,
+      data: {
+        active_batches: activeBatches,
+        active_batches_change: activeBatchesChange,
+        pending_approvals: pendingCount,
+        flagged_batches: flaggedBatches,
+        completed_today: completedToday,
+        completed_change_percent: completedChange,
+        avg_processing_hours: Math.round(avgProcessingHours * 10) / 10,
+        processing_time_change: processingTimeChange,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/analytics/export-csv
  * Export analytics data as CSV
  */
