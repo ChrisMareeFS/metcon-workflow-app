@@ -59,14 +59,6 @@ export default function FlowBuilder() {
     initialize();
   }, [id]);
 
-  // Convert flow to nodes when both flow and templates are available
-  useEffect(() => {
-    if (flow && flow._id !== 'new' && flow.nodes && flow.nodes.length > 0 && 
-        stationTemplates.length > 0 && checkTemplates.length > 0) {
-      convertFlowToNodes(flow);
-    }
-  }, [flow, stationTemplates, checkTemplates]);
-
   const loadTemplates = async () => {
     try {
       const [stations, checks] = await Promise.all([
@@ -111,51 +103,68 @@ export default function FlowBuilder() {
     setIsLoading(false);
   };
 
-  const convertFlowToNodes = (flowData: Flow) => {
-    const newNodes: Node[] = [];
-    const newEdges: Edge[] = [];
+  // Convert flow to nodes when both flow and templates are available
+  useEffect(() => {
+    if (flow && flow._id !== 'new' && flow.nodes && flow.nodes.length > 0 && 
+        stationTemplates.length > 0 && checkTemplates.length > 0) {
+      console.log('Converting flow to nodes:', { 
+        flowNodes: flow.nodes.length, 
+        stations: stationTemplates.length, 
+        checks: checkTemplates.length 
+      });
+      
+      const newNodes: Node[] = [];
+      const newEdges: Edge[] = [];
 
-    // Convert flow nodes to ReactFlow nodes
-    flowData.nodes.forEach((node) => {
-      const template = 
-        node.type === 'station'
-          ? stationTemplates.find(t => t.template_id === node.template_id)
-          : checkTemplates.find(t => t.template_id === node.template_id);
+      // Convert flow nodes to ReactFlow nodes
+      flow.nodes.forEach((node) => {
+        const template = 
+          node.type === 'station'
+            ? stationTemplates.find(t => t.template_id === node.template_id)
+            : checkTemplates.find(t => t.template_id === node.template_id);
 
-      if (template) {
-        newNodes.push({
-          id: node.id,
-          type: 'template',
-          position: node.position,
-          data: {
-            type: node.type,
-            template: template,
-            onSelect: () => {
-              const selectedNode = newNodes.find(n => n.id === node.id);
-              if (selectedNode) setSelectedNode(selectedNode);
+        if (template) {
+          newNodes.push({
+            id: node.id,
+            type: 'template',
+            position: node.position,
+            data: {
+              type: node.type,
+              template: template,
+              onSelect: () => {
+                const selectedNode = newNodes.find(n => n.id === node.id);
+                if (selectedNode) setSelectedNode(selectedNode);
+              },
             },
+          });
+        } else {
+          console.warn('Template not found for node:', node.template_id, 'type:', node.type);
+        }
+      });
+
+      // Convert flow edges to ReactFlow edges
+      flow.edges.forEach((edge) => {
+        newEdges.push({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          type: 'smoothstep',
+          animated: true,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
           },
         });
-      }
-    });
-
-    // Convert flow edges to ReactFlow edges
-    flowData.edges.forEach((edge) => {
-      newEdges.push({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        type: 'smoothstep',
-        animated: true,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-        },
       });
-    });
 
-    setNodes(newNodes);
-    setEdges(newEdges);
-  };
+      console.log('Setting nodes and edges:', { nodes: newNodes.length, edges: newEdges.length });
+      setNodes(newNodes);
+      setEdges(newEdges);
+    } else if (flow && flow._id !== 'new' && flow.nodes && flow.nodes.length === 0) {
+      // Flow exists but has no nodes - clear the canvas
+      setNodes([]);
+      setEdges([]);
+    }
+  }, [flow, stationTemplates, checkTemplates, setNodes, setEdges]);
 
   const onConnect = useCallback(
     (params: Connection) => {
