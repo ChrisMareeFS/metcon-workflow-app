@@ -21,6 +21,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Disable ETag to prevent 304 responses
+app.set('etag', false);
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
