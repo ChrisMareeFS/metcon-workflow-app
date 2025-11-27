@@ -1,6 +1,6 @@
 import { Flow } from '../../services/flowService';
 import Button from '../ui/Button';
-import { ArrowLeft, Save, Play } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { useState } from 'react';
 
 interface FlowHeaderProps {
