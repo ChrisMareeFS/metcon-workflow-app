@@ -90,7 +90,7 @@ export default function StepRunner() {
 
   // Check if step can be completed (for button disable state)
   // Use useMemo to ensure it recalculates when dependencies change
-  const canCompleteStep = (): boolean => {
+  const canCompleteStep = useMemo(() => {
     if (!batch || !template) {
       return false;
     }
@@ -148,7 +148,7 @@ export default function StepRunner() {
 
     // Default: don't allow completion if we don't know the type
     return false;
-  };
+  }, [batch, template, checklistState, instructionConfirmed, massValue, signatureValue, photoFile]);
 
   const handleCompleteStep = async (overrideStepData?: any) => {
     if (!batch || !template) return;
