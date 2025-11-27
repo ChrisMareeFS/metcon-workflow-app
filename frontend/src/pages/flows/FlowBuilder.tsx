@@ -42,6 +42,9 @@ export default function FlowBuilder() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false);
+  
+  // Track if we've already converted this flow to prevent duplicate conversions
+  const convertedFlowIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const initialize = async () => {
@@ -107,12 +110,23 @@ export default function FlowBuilder() {
   useEffect(() => {
     // Only convert if we have a saved flow (not 'new') with nodes
     if (!flow || flow._id === 'new') {
+      convertedFlowIdRef.current = null;
+      return;
+    }
+
+    // Skip if we've already converted this flow version
+    const flowSignature = `${flow._id}_${flow.updated_at}`;
+    if (convertedFlowIdRef.current === flowSignature) {
+      console.log('Skipping duplicate conversion for:', flowSignature);
       return;
     }
 
     // Wait for templates to be loaded
     if (stationTemplates.length === 0 && checkTemplates.length === 0) {
-      console.log('Waiting for templates to load...');
+      console.log('Waiting for templates to load...', { 
+        stations: stationTemplates.length, 
+        checks: checkTemplates.length 
+      });
       return;
     }
 
@@ -121,16 +135,18 @@ export default function FlowBuilder() {
       console.log('Flow has no nodes, clearing canvas');
       setNodes([]);
       setEdges([]);
+      convertedFlowIdRef.current = flowSignature;
       return;
     }
 
-    console.log('Converting flow to nodes:', { 
+    console.log('🔄 Converting flow to nodes:', { 
       flowId: flow._id,
       flowName: flow.name,
       flowNodes: flow.nodes.length, 
       flowEdges: flow.edges.length,
       stations: stationTemplates.length, 
-      checks: checkTemplates.length 
+      checks: checkTemplates.length,
+      flowSignature
     });
     
     const newNodes: Node[] = [];
@@ -139,7 +155,7 @@ export default function FlowBuilder() {
 
     // Convert flow nodes to ReactFlow nodes
     flow.nodes.forEach((node) => {
-      console.log('Processing node:', { id: node.id, type: node.type, template_id: node.template_id });
+      console.log('  Processing node:', { id: node.id, type: node.type, template_id: node.template_id, position: node.position });
       
       const template = 
         node.type === 'station'
@@ -147,7 +163,7 @@ export default function FlowBuilder() {
           : checkTemplates.find(t => t.template_id === node.template_id);
 
       if (template) {
-        console.log('Found template:', template.name);
+        console.log('  ✅ Found template:', template.name);
         newNodes.push({
           id: node.id,
           type: 'template',
@@ -162,7 +178,7 @@ export default function FlowBuilder() {
           },
         });
       } else {
-        console.error('Template not found for node:', { 
+        console.error('  ❌ Template not found for node:', { 
           nodeId: node.id, 
           nodeType: node.type, 
           templateId: node.template_id,
@@ -187,21 +203,32 @@ export default function FlowBuilder() {
       });
     });
 
-    console.log('Conversion complete:', { 
+    console.log('✅ Conversion complete:', { 
       nodesCreated: newNodes.length, 
       edgesCreated: newEdges.length,
       missingTemplates: missingTemplates.length,
-      missingTemplateIds: missingTemplates
+      missingTemplateIds: missingTemplates,
+      willSetNodes: newNodes.length > 0
     });
 
     if (newNodes.length > 0) {
+      console.log('📦 Setting nodes and edges:', { 
+        nodeCount: newNodes.length, 
+        edgeCount: newEdges.length,
+        nodeIds: newNodes.map(n => n.id),
+        nodePositions: newNodes.map(n => ({ id: n.id, pos: n.position }))
+      });
       setNodes(newNodes);
       setEdges(newEdges);
+      convertedFlowIdRef.current = flowSignature;
+      console.log('✅ Nodes and edges set successfully');
     } else if (missingTemplates.length > 0) {
-      console.error('No nodes created because templates are missing. Missing template IDs:', missingTemplates);
+      console.error('❌ No nodes created because templates are missing. Missing template IDs:', missingTemplates);
       alert(`Warning: Could not load ${missingTemplates.length} node(s) because their templates are missing. Please check the browser console for details.`);
+    } else {
+      console.warn('⚠️ No nodes created and no missing templates - this should not happen');
     }
-  }, [flow, stationTemplates, checkTemplates, setNodes, setEdges]);
+  }, [flow, stationTemplates, checkTemplates]);
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -231,7 +258,7 @@ export default function FlowBuilder() {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const templateData = JSON.parse(event.dataTransfer.getData('application/reactflow'));
 
-      const position = reactFlowInstance.project({
+      const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
