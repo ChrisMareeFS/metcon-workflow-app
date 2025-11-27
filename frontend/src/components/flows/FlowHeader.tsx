@@ -92,7 +92,7 @@ export default function FlowHeader({
 
         <Button variant="secondary" onClick={onSave} isLoading={isSaving} disabled={isSaving}>
           <Save className="h-4 w-4 mr-2" />
-          {isSaving ? 'Saving...' : 'Save Draft'}
+          {isSaving ? 'Saving...' : 'Save'}
         </Button>
 
         {flow._id !== 'new' && (
