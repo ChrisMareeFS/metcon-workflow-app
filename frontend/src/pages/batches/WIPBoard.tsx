@@ -14,12 +14,15 @@ interface Filters {
 
 export default function WIPBoard() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({ status: 'in_progress' }); // Include 'created' status too
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [batchToDelete, setBatchToDelete] = useState<Batch | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadBatches();
@@ -76,6 +79,23 @@ export default function WIPBoard() {
       console.error('Failed to load batches:', error);
     } finally {
       if (!silent) setIsLoading(false);
+    }
+  };
+
+  const handleDeleteBatch = async () => {
+    if (!batchToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await batchService.deleteBatch(batchToDelete._id);
+      alert(`Batch ${batchToDelete.batch_number} deleted successfully.`);
+      setBatchToDelete(null);
+      loadBatches(); // Refresh the list
+    } catch (error: any) {
+      console.error('Failed to delete batch:', error);
+      alert(error.response?.data?.error || 'Failed to delete batch. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 

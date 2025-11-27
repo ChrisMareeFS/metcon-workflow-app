@@ -353,32 +353,46 @@ export default function KanbanBoard() {
                           '#eab308'
                       }}
                     >
-                      {/* Batch Number and Priority Toggle */}
+                      {/* Batch Number, Priority Toggle, and Delete Button */}
                       <div className="font-bold text-gray-900 mb-2 flex items-center justify-between gap-2">
                         <span className="truncate">{batch.batch_number}</span>
-                        {currentUser?.role === 'admin' ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePriorityChange(batch._id, batch.priority === 'high' ? 'normal' : 'high');
-                            }}
-                            disabled={updatingPriority === batch._id}
-                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              batch.priority === 'high'
-                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            } ${updatingPriority === batch._id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                            title={batch.priority === 'high' ? 'Set to Normal Priority' : 'Set to High Priority'}
-                          >
-                            {batch.priority === 'high' ? 'High' : 'Normal'}
-                          </button>
-                        ) : (
-                          batch.priority === 'high' && (
-                            <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700">
-                              High
-                            </span>
-                          )
-                        )}
+                        <div className="flex items-center gap-1">
+                          {currentUser?.role === 'admin' ? (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePriorityChange(batch._id, batch.priority === 'high' ? 'normal' : 'high');
+                                }}
+                                disabled={updatingPriority === batch._id}
+                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                  batch.priority === 'high'
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                } ${updatingPriority === batch._id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                title={batch.priority === 'high' ? 'Set to Normal Priority' : 'Set to High Priority'}
+                              >
+                                {batch.priority === 'high' ? 'High' : 'Normal'}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setBatchToDelete(batch);
+                                }}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Delete batch"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            batch.priority === 'high' && (
+                              <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700">
+                                High
+                              </span>
+                            )
+                          )}
+                        </div>
                       </div>
 
                       {/* Status Badges */}
@@ -485,6 +499,56 @@ export default function KanbanBoard() {
             <Plus className="h-4 w-4 mr-2" />
             Start First Batch
           </Button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {batchToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-red-100 rounded-lg">
+                  <Trash2 className="h-8 w-8 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-xl text-gray-900">Delete Batch</CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Are you sure you want to delete batch "{batchToDelete.batch_number}"?
+                  </p>
+                </div>
+                <button
+                  onClick={() => setBatchToDelete(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  disabled={isDeleting}
+                >
+                  <X className="h-5 w-5 text-gray-600" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-red-700 font-medium mb-4">
+                This action cannot be undone. The batch and all its associated data will be permanently deleted.
+              </p>
+              <div className="flex justify-end gap-3">
+                <Button 
+                  variant="secondary" 
+                  onClick={() => setBatchToDelete(null)} 
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="danger" 
+                  onClick={handleDeleteBatch} 
+                  isLoading={isDeleting}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Batch'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
