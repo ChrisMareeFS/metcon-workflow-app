@@ -623,6 +623,33 @@ router.post('/:id/flag', authorize('operator', 'admin'), async (req: AuthRequest
  * DELETE /api/batches/delete-all
  * Delete ALL batches (admin only) - TEMPORARY ENDPOINT FOR CLEANUP
  */
+/**
+ * DELETE /api/batches/:id
+ * Delete a single batch (admin only)
+ */
+router.delete('/:id', authorize('admin'), async (req: AuthRequest, res, next) => {
+  try {
+    const batchId = req.params.id;
+    
+    const batch = await Batch.findById(batchId);
+    if (!batch) {
+      throw new AppError('Batch not found', 404);
+    }
+    
+    // Delete the batch
+    await Batch.findByIdAndDelete(batchId);
+    
+    console.log(`[DELETE /api/batches/${batchId}] Batch ${batch.batch_number} deleted by admin ${req.user?.username}`);
+    
+    res.json({
+      success: true,
+      message: `Batch ${batch.batch_number} deleted successfully`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.delete('/delete-all', authorize('admin'), async (_req: AuthRequest, res, next) => {
   try {
     const countBefore = await Batch.countDocuments({});
