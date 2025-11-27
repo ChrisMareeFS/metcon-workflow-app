@@ -132,10 +132,19 @@ export const batchService = {
   async getBatches(params?: {
     status?: string;
     pipeline?: string;
+    flow_id?: string; // Added flow_id filter
     limit?: number;
     offset?: number;
   }): Promise<BatchesResponse> {
-    const response = await api.get('/batches', { params });
+    // Add cache-busting timestamp to force fresh requests
+    const cacheBust = Date.now();
+    const response = await api.get('/batches', { 
+      params: { ...params, _t: cacheBust },
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      }
+    });
     return response.data.data;
   },
 
