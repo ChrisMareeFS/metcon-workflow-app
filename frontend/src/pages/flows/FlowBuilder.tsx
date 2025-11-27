@@ -222,13 +222,21 @@ export default function FlowBuilder() {
       setEdges(newEdges);
       convertedFlowIdRef.current = flowSignature;
       console.log('✅ Nodes and edges set successfully');
+      
+      // Fit view to show all nodes after a short delay to ensure ReactFlow is ready
+      setTimeout(() => {
+        if (reactFlowInstance) {
+          reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
+          console.log('🎯 Fitted view to show all nodes');
+        }
+      }, 100);
     } else if (missingTemplates.length > 0) {
       console.error('❌ No nodes created because templates are missing. Missing template IDs:', missingTemplates);
       alert(`Warning: Could not load ${missingTemplates.length} node(s) because their templates are missing. Please check the browser console for details.`);
     } else {
       console.warn('⚠️ No nodes created and no missing templates - this should not happen');
     }
-  }, [flow, stationTemplates, checkTemplates]);
+  }, [flow, stationTemplates, checkTemplates, reactFlowInstance]);
 
   const onConnect = useCallback(
     (params: Connection) => {
