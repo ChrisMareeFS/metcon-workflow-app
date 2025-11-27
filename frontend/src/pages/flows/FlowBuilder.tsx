@@ -403,7 +403,7 @@ export default function FlowBuilder() {
             nodeTypes={nodeTypes}
             minZoom={0.1}
             maxZoom={2}
-            defaultViewport={{ x: 0, y: 0, zoom: 0.2 }}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.5 }}
           >
             <Background variant={BackgroundVariant.Dots} />
             <Controls />
